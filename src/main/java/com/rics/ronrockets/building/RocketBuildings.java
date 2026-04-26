@@ -2,28 +2,33 @@ package com.rics.ronrockets.building;
 
 import com.rics.ronrockets.RonRocketsMod;
 import com.solegendary.reignofnether.api.ReignOfNetherRegistries;
+import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
 
 public class RocketBuildings {
 
-    public static final DeferredRegister<com.solegendary.reignofnether.building.Building> BUILDINGS =
-            DeferredRegister.create(
-                    ReignOfNetherRegistries.BUILDING,
-                    RonRocketsMod.MODID
-            );
+    public static VillagerRocketSilo VILLAGER_SILO;
+    public static MonsterRocketSilo MONSTER_SILO;
+    public static PiglinRocketSilo PIGLIN_SILO;
 
-    public static final RegistryObject<VillagerRocketSilo> VILLAGER_SILO =
-            BUILDINGS.register("villager_rocket_silo", VillagerRocketSilo::new);
+    public static void register() {
 
-    public static final RegistryObject<MonsterRocketSilo> MONSTER_SILO =
-            BUILDINGS.register("monster_rocket_silo", MonsterRocketSilo::new);
+        VILLAGER_SILO = Registry.register(
+                ReignOfNetherRegistries.BUILDING,
+                new ResourceLocation(RonRocketsMod.MODID, "villager_rocket_silo"),
+                new VillagerRocketSilo()
+        );
 
-    public static final RegistryObject<PiglinRocketSilo> PIGLIN_SILO =
-            BUILDINGS.register("piglin_rocket_silo", PiglinRocketSilo::new);
+        MONSTER_SILO = Registry.register(
+                ReignOfNetherRegistries.BUILDING,
+                new ResourceLocation(RonRocketsMod.MODID, "monster_rocket_silo"),
+                new MonsterRocketSilo()
+        );
 
-    public static void register(net.minecraftforge.eventbus.api.IEventBus bus) {
-        BUILDINGS.register(bus);
+        PIGLIN_SILO = Registry.register(
+                ReignOfNetherRegistries.BUILDING,
+                new ResourceLocation(RonRocketsMod.MODID, "piglin_rocket_silo"),
+                new PiglinRocketSilo()
+        );
     }
 }

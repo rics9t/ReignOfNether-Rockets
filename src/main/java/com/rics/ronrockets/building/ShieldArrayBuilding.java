@@ -10,14 +10,16 @@ public class ShieldArrayBuilding extends Building {
 
     public ShieldArrayBuilding(String structureName, Faction faction) {
         super(structureName,
-                new ResourceCost(200, 300, 500, 0),
+                new ResourceCost(200, 300, 500, 0, 0)
                 false
         );
 
         this.name = "Shield Array";
         this.portraitBlock = net.minecraft.world.level.block.Blocks.BEACON;
     }
-
+    
+    public abstract BuildingPlaceButton getBuildButton(Keybinding hotkey);
+    
     @Override
     public Faction getFaction() {
         return Faction.NONE;
