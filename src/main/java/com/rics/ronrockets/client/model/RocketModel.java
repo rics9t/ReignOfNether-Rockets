@@ -19,7 +19,7 @@ public class RocketModel<T extends RocketEntity> extends EntityModel<T> {
 	public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(new ResourceLocation("modid", "rocket"), "main");
 	private final ModelPart bb_main;
 
-	public Rocket(ModelPart root) {
+	public RocketModel(ModelPart root) {
 		this.bb_main = root.getChild("bb_main");
 	}
 
