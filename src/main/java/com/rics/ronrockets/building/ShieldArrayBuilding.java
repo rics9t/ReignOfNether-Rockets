@@ -8,6 +8,8 @@ public class ShieldArrayBuilding extends Building {
 
     public static final int SHIELD_RADIUS = 64;
 
+    this.abilities.add(new ShieldInterceptAbility());
+
     public ShieldArrayBuilding(String structureName, Faction faction) {
         super(structureName,
                 new ResourceCost(200, 300, 500, 0, 0),
