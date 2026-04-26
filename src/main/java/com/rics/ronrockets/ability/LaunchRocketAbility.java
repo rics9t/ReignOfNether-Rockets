@@ -32,7 +32,7 @@ public class LaunchRocketAbility extends Ability {
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
 
         return new AbilityButton(
-                "Launch Rocket",
+                I18n.get("abilities.ronrockets.launch_rocket"),
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
                 hotkey,
                 () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
@@ -46,11 +46,11 @@ public class LaunchRocketAbility extends Ability {
                                 Style.EMPTY.withBold(true)
                         ),
                         FormattedCharSequence.forward(
-                                "Damage: 80% (40% Capitol)",
+                                I18n.get("tooltip.ronrockets.launch_damage"),
                                 Style.EMPTY
                         ),
                         FormattedCharSequence.forward(
-                                "Unit Damage: 50",
+                                I18n.get("tooltip.ronrockets.unit_damage"),
                                 Style.EMPTY
                         )
                 ),
