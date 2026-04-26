@@ -29,7 +29,7 @@ public class ProduceRocketAbility extends Ability {
         int charges = placement.getCharges(this);
 
         return new AbilityButton(
-                "Produce Rocket",
+                I18n.get("abilities.ronrockets.produce_rocket"),
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/produce_rocket.png"),
                 hotkey,
                 () -> false,
@@ -43,11 +43,11 @@ public class ProduceRocketAbility extends Ability {
                                 Style.EMPTY.withBold(true)
                         ),
                         FormattedCharSequence.forward(
-                                "Production Time: 120s",
+                                I18n.get("tooltip.ronrockets.produce_time"),
                                 Style.EMPTY
                         ),
                         FormattedCharSequence.forward(
-                                "Stored Rockets: " + charges + "/2",
+                                I18n.get("tooltip.ronrockets.stored_rockets", charges),
                                 Style.EMPTY
                         )
                 ),
@@ -60,7 +60,6 @@ public class ProduceRocketAbility extends Ability {
     public void use(Level level, BuildingPlacement buildingUsing, net.minecraft.core.BlockPos bp) {
 
         if (level.isClientSide()) return;
-
         if (buildingUsing.getCharges(this) >= maxCharges) return;
 
         buildingUsing.setCooldown(this, cooldownMax);
