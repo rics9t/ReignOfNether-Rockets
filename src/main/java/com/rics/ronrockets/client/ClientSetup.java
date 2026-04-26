@@ -13,4 +13,12 @@ public class ClientSetup {
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(RocketEntities.ROCKET.get(), RocketRenderer::new);
     }
+
+    @SubscribeEvent
+public static void registerLayers(EntityRenderersEvent.RegisterLayerDefinitions event) {
+    event.registerLayerDefinition(
+            RocketLayers.ROCKET_LAYER,
+            RocketModel::createBodyLayer
+    );
+}
 }
