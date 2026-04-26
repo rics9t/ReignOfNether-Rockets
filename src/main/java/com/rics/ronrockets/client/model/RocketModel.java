@@ -7,50 +7,48 @@ import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.*;
 
-public class RocketModel extends EntityModel<RocketEntity> {
+// Made with Blockbench 5.1.4
+// Exported for Minecraft version 1.17 or later with Mojang mappings
+// Paste this class into your mod and generate all required imports
 
-    private final ModelPart rocket;
 
-    public RocketModel(ModelPart root) {
-        this.rocket = root.getChild("rocket");
-    }
+public class RocketModel<T extends RocketEntity> extends EntityModel<T> {
+	// This layer location should be baked with EntityRendererProvider.Context in the entity renderer and passed into this model's constructor
+	public static final ModelLayerLocation LAYER_LOCATION = new ModelLayerLocation(new ResourceLocation("modid", "rocket"), "main");
+	private final ModelPart bb_main;
 
-    public static LayerDefinition createBodyLayer() {
+	public Rocket(ModelPart root) {
+		this.bb_main = root.getChild("bb_main");
+	}
 
-        MeshDefinition mesh = new MeshDefinition();
-        PartDefinition root = mesh.getRoot();
+	public static LayerDefinition createBodyLayer() {
+		MeshDefinition meshdefinition = new MeshDefinition();
+		PartDefinition partdefinition = meshdefinition.getRoot();
 
-        root.addOrReplaceChild(
-                "rocket",
-                CubeListBuilder.create()
-                        .texOffs(0, 0)
-                        .addBox(-2.0F, -8.0F, -2.0F,
-                                4.0F, 16.0F, 4.0F),
-                PartPose.offset(0.0F, 16.0F, 0.0F)
-        );
+		PartDefinition bb_main = partdefinition.addOrReplaceChild("bb_main", CubeListBuilder.create().texOffs(0, 0).addBox(-4.0F, -37.0F, -4.0F, 8.0F, 32.0F, 8.0F, new CubeDeformation(0.0F))
+		.texOffs(32, 38).addBox(-3.0F, -5.0F, -3.0F, 6.0F, 2.0F, 6.0F, new CubeDeformation(0.0F))
+		.texOffs(32, 22).addBox(-3.0F, -47.0F, -3.0F, 6.0F, 10.0F, 6.0F, new CubeDeformation(0.0F)), PartPose.offset(0.0F, 24.0F, 0.0F));
 
-        return LayerDefinition.create(mesh, 32, 32);
-    }
+		PartDefinition cube_r1 = bb_main.addOrReplaceChild("cube_r1", CubeListBuilder.create().texOffs(32, 11).addBox(-21.0F, -2.0F, -1.0F, 22.0F, 9.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-3.0F, -31.0F, 1.0F, 0.0F, -0.0873F, -0.1745F));
 
-    @Override
-    public void setupAnim(RocketEntity entity,
-                          float limbSwing,
-                          float limbSwingAmount,
-                          float ageInTicks,
-                          float netHeadYaw,
-                          float headPitch) {
-    }
+		PartDefinition cube_r2 = bb_main.addOrReplaceChild("cube_r2", CubeListBuilder.create().texOffs(32, 0).addBox(-1.0F, -2.0F, -1.0F, 22.0F, 9.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(3.0F, -31.0F, 1.0F, 0.0F, 0.0873F, 0.1745F));
 
-    @Override
-    public void renderToBuffer(PoseStack poseStack,
-                               VertexConsumer buffer,
-                               int packedLight,
-                               int packedOverlay,
-                               float red,
-                               float green,
-                               float blue,
-                               float alpha) {
+		PartDefinition cube_r3 = bb_main.addOrReplaceChild("cube_r3", CubeListBuilder.create().texOffs(40, 46).addBox(-5.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(0.0F, -5.0F, 4.0F, -1.5708F, 1.3963F, -1.5708F));
 
-        rocket.render(poseStack, buffer, packedLight, packedOverlay);
-    }
+		PartDefinition cube_r4 = bb_main.addOrReplaceChild("cube_r4", CubeListBuilder.create().texOffs(20, 46).addBox(-5.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(-4.0F, -5.0F, 0.0F, 0.0F, 0.0F, -0.1745F));
+
+		PartDefinition cube_r5 = bb_main.addOrReplaceChild("cube_r5", CubeListBuilder.create().texOffs(0, 40).addBox(-3.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)), PartPose.offsetAndRotation(4.0F, -5.0F, 0.0F, 0.0F, 0.0F, 0.1745F));
+
+		return LayerDefinition.create(meshdefinition, 128, 128);
+	}
+
+	@Override
+	public void setupAnim(RocketEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+
+	}
+
+	@Override
+	public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha) {
+		bb_main.render(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue, alpha);
+	}
 }
