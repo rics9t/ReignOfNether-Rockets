@@ -1,13 +1,14 @@
 package com.rics.ronrockets.rocket;
 
+import com.rics.ronrockets.building.ShieldArrayBuilding;
+import com.rics.ronrockets.ability.ShieldInterceptAbility;
+import com.solegendary.reignofnether.attackwarnings.AttackWarningClientboundPacket;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
 import com.solegendary.reignofnether.unit.interfaces.Unit;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.chat.Component;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -20,22 +21,7 @@ public class RocketManager {
     private static final List<RocketStrike> ACTIVE_STRIKES = new ArrayList<>();
 
     public static void registerStrike(RocketStrike strike) {
-
-    ACTIVE_STRIKES.add(strike);
-
-    // ✅ Notify defender players
-    ServerLevel level = BuildingServerEvents.getServerLevel();
-    if (level == null) return;
-
-    for (ServerPlayer player : level.getPlayers(p -> true)) {
-
-        if (player.getName().getString().equals(strike.attacker)) continue;
-
-        player.displayClientMessage(
-                Component.translatable("hud.ronrockets.rocket_incoming"),
-                true
-        );
-    }
+        ACTIVE_STRIKES.add(strike);
     }
 
     @SubscribeEvent
@@ -62,62 +48,98 @@ public class RocketManager {
 
     private static void resolveStrike(RocketStrike strike, ServerLevel level) {
 
-    int radius = 8;
+        int radius = 8;
 
-    // ✅ Check Shield Interception FIRST
-    for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
+        // ✅ Shield interception
+        for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
 
-        if (!(building.getBuilding() instanceof ShieldArrayBuilding)) continue;
-        if (!building.isBuilt) continue;
+            if (!(building.getBuilding() instanceof ShieldArrayBuilding)) continue;
+            if (!building.isBuilt) continue;
 
-        double dist = building.centrePos.distSqr(strike.targetPos);
+            double dist = building.centrePos.distSqr(strike.targetPos);
 
-        if (dist <= ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) {
+            if (dist <= ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) {
 
-            // Check cooldown
-            for (var ability : building.getAbilities()) {
-                if (ability instanceof com.rics.ronrockets.ability.ShieldInterceptAbility) {
-
-                    if (ability.isOffCooldown(building)) {
-                        ability.setToMaxCooldown(building);
-                        return; // ✅ Rocket intercepted, cancel strike
+                for (var ability : building.getAbilities()) {
+                    if (ability instanceof ShieldInterceptAbility) {
+                        if (ability.isOffCooldown(building)) {
+                            ability.setToMaxCooldown(building);
+                            return; // intercepted
+                        }
                     }
                 }
             }
         }
-    }
 
-    // ✅ DAMAGE BUILDINGS
-    for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
+        // ✅ Trigger native attack warning
+        for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
+            if (!building.isBuilt) continue;
 
-        if (!building.isBuilt) continue;
-
-        double dist = building.centrePos.distSqr(strike.targetPos);
-        if (dist > radius * radius) continue;
-
-        float percent = building.isCapitol ? 0.40f : 0.80f;
-
-        int blocksToDestroy = (int)(building.getBlocksTotal() * percent);
-
-        building.destroyRandomBlocks(blocksToDestroy);
-
-        if (building.shouldBeDestroyed()) {
-            BuildingServerEvents.cancelBuilding(building, building.ownerName);
+            double dist = building.centrePos.distSqr(strike.targetPos);
+            if (dist <= radius * radius) {
+                AttackWarningClientboundPacket.sendWarning(
+                        building.ownerName,
+                        strike.targetPos
+                );
+            }
         }
+
+        // ✅ Damage buildings
+        for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
+
+            if (!building.isBuilt) continue;
+
+            double dist = building.centrePos.distSqr(strike.targetPos);
+            if (dist > radius * radius) continue;
+
+            float percent = building.isCapitol ? 0.40f : 0.80f;
+
+            int blocksToDestroy = (int)(building.getBlocksTotal() * percent);
+
+            building.destroyRandomBlocks(blocksToDestroy);
+
+            if (building.shouldBeDestroyed()) {
+                BuildingServerEvents.cancelBuilding(building, building.ownerName);
+            }
+        }
+
+        // ✅ Damage units
+        AABB area = new AABB(strike.targetPos).inflate(radius);
+
+        List<LivingEntity> entities =
+                level.getEntitiesOfClass(LivingEntity.class, area);
+
+        for (LivingEntity entity : entities) {
+            if (entity instanceof Unit) {
+                entity.hurt(level.damageSources().generic(), 50f);
+            }
+        }
+
+        // ✅ Spawn cinematic particles
+        spawnImpactEffects(level, strike.targetPos);
     }
 
-    // ✅ DAMAGE UNITS
-    var area = new net.minecraft.world.phys.AABB(strike.targetPos).inflate(radius);
+    private static void spawnImpactEffects(ServerLevel level, net.minecraft.core.BlockPos pos) {
 
-    var entities = level.getEntitiesOfClass(
-            net.minecraft.world.entity.LivingEntity.class,
-            area
-    );
+        level.sendParticles(
+                net.minecraft.core.particles.ParticleTypes.EXPLOSION_EMITTER,
+                pos.getX() + 0.5,
+                pos.getY() + 1,
+                pos.getZ() + 0.5,
+                1,
+                0,
+                0,
+                0,
+                0
+        );
 
-    for (var entity : entities) {
-        if (entity instanceof com.solegendary.reignofnether.unit.interfaces.Unit) {
-            entity.hurt(level.damageSources().generic(), 50f);
-          }
-       }
+        level.playSound(
+                null,
+                pos,
+                net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE,
+                net.minecraft.sounds.SoundSource.BLOCKS,
+                2.0f,
+                1.0f
+        );
     }
 }
