@@ -10,7 +10,7 @@ public class ShieldArrayBuilding extends Building {
 
     public ShieldArrayBuilding(String structureName, Faction faction) {
         super(structureName,
-                new ResourceCost(200, 300, 500, 0, 0)
+                new ResourceCost(200, 300, 500, 0, 0),
                 false
         );
 
