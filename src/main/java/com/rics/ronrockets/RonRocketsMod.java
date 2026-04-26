@@ -19,5 +19,6 @@ public class RonRocketsMod {
         RocketBuildings.register();
 
         MinecraftForge.EVENT_BUS.register(RocketManager.class);
+        MinecraftForge.EVENT_BUS.register(RocketPlacementHandler.class);
     }
 }
