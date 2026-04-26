@@ -25,7 +25,7 @@ public class ShieldInterceptAbility extends Ability {
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
 
         return new AbilityButton(
-                "Shield Intercept",
+                I18n.get("abilities.ronrockets.shield_intercept"),
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/shield_intercept.png"),
                 hotkey,
                 () -> false,
@@ -39,11 +39,11 @@ public class ShieldInterceptAbility extends Ability {
                                 Style.EMPTY.withBold(true)
                         ),
                         FormattedCharSequence.forward(
-                                "Intercept Radius: 64",
+                                I18n.get("tooltip.ronrockets.shield_radius"),
                                 Style.EMPTY
                         ),
                         FormattedCharSequence.forward(
-                                "Cooldown: 30s",
+                                I18n.get("tooltip.ronrockets.shield_cooldown"),
                                 Style.EMPTY
                         )
                 ),
