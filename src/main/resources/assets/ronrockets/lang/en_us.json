@@ -1,0 +1,18 @@
+{
+  "abilities.ronrockets.produce_rocket": "Produce Rocket",
+  "abilities.ronrockets.launch_rocket": "Launch Rocket",
+  "abilities.ronrockets.shield_intercept": "Shield Intercept",
+
+  "tooltip.ronrockets.produce_time": "Production Time: 120s",
+  "tooltip.ronrockets.stored_rockets": "Stored Rockets: %s/2",
+  "tooltip.ronrockets.launch_damage": "Damage: 80%% (40%% Capitol)",
+  "tooltip.ronrockets.unit_damage": "Unit Damage: 50",
+  "tooltip.ronrockets.shield_radius": "Intercept Radius: 64",
+  "tooltip.ronrockets.shield_cooldown": "Cooldown: 30s",
+
+  "building.ronrockets.rocket_silo": "Rocket Silo",
+  "building.ronrockets.shield_array": "Shield Array",
+
+  "hud.ronrockets.rocket_incoming": "Incoming Rocket!",
+  "hud.ronrockets.rocket_intercepted": "Rocket Intercepted!"
+}
