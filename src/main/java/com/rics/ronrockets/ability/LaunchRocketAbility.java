@@ -1,21 +1,62 @@
 package com.rics.ronrockets.ability;
 
+import com.rics.ronrockets.RonRocketsMod;
+import com.rics.ronrockets.building.AbstractRocketSilo;
 import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.rocket.RocketStrike;
-import com.rics.ronrockets.building.AbstractRocketSilo;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
+import com.solegendary.reignofnether.cursor.CursorClientEvents;
+import com.solegendary.reignofnether.hud.AbilityButton;
+import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.unit.UnitAction;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.Level;
+import net.minecraft.server.level.ServerLevel;
+
+import java.util.List;
 
 public class LaunchRocketAbility extends Ability {
 
-    private static final int LAUNCH_COOLDOWN = 100; // 5 seconds
+    private static final int LAUNCH_COOLDOWN = 100;
 
     public LaunchRocketAbility() {
         super(UnitAction.ATTACK_GROUND, LAUNCH_COOLDOWN, 9999, 8, false);
+    }
+
+    @Override
+    public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
+
+        return new AbilityButton(
+                "Launch Rocket",
+                new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
+                hotkey,
+                () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
+                () -> false,
+                () -> true,
+                () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
+                null,
+                List.of(
+                        FormattedCharSequence.forward(
+                                I18n.get("abilities.ronrockets.launch_rocket"),
+                                Style.EMPTY.withBold(true)
+                        ),
+                        FormattedCharSequence.forward(
+                                "Damage: 80% (40% Capitol)",
+                                Style.EMPTY
+                        ),
+                        FormattedCharSequence.forward(
+                                "Unit Damage: 50",
+                                Style.EMPTY
+                        )
+                ),
+                this,
+                placement
+        );
     }
 
     @Override
@@ -24,9 +65,6 @@ public class LaunchRocketAbility extends Ability {
         if (level.isClientSide()) return;
         if (!(buildingUsing.getBuilding() instanceof AbstractRocketSilo)) return;
 
-        if (!isOffCooldown(buildingUsing)) return;
-
-        // Find produce ability to check charges
         Ability produceAbility = null;
 
         for (Ability ability : buildingUsing.getAbilities()) {
@@ -37,7 +75,6 @@ public class LaunchRocketAbility extends Ability {
         }
 
         if (produceAbility == null) return;
-
         if (buildingUsing.getCharges(produceAbility) <= 0) return;
 
         ServerLevel serverLevel = (ServerLevel) level;
@@ -46,20 +83,18 @@ public class LaunchRocketAbility extends Ability {
         double distance = Math.sqrt(buildingUsing.centrePos.distSqr(targetBp));
         long travelTime = (long)(distance * 2);
 
-        RocketStrike strike = new RocketStrike(
-                buildingUsing.ownerName,
-                buildingUsing.centrePos,
-                targetBp,
-                currentTick + travelTime
+        RocketManager.registerStrike(
+                new RocketStrike(
+                        buildingUsing.ownerName,
+                        buildingUsing.centrePos,
+                        targetBp,
+                        currentTick + travelTime
+                )
         );
 
-        RocketManager.registerStrike(strike);
-
-        // Consume rocket
         buildingUsing.setCharges(produceAbility,
                 buildingUsing.getCharges(produceAbility) - 1);
 
-        // Set launch cooldown
         buildingUsing.setCooldown(this, cooldownMax);
     }
 }
