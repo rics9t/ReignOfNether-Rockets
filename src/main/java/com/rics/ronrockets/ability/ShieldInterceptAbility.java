@@ -1,6 +1,7 @@
 package com.rics.ronrockets.ability;
 
 import com.rics.ronrockets.RonRocketsMod;
+import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.hud.AbilityButton;
@@ -15,14 +16,14 @@ import java.util.List;
 
 public class ShieldInterceptAbility extends Ability {
 
-    private static final int COOLDOWN = 600;
-
     public ShieldInterceptAbility() {
-        super(UnitAction.NONE, COOLDOWN, 0, 0, false);
+        super(UnitAction.NONE, 0, 0, 0, false);
     }
 
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
+
+        int energy = ShieldEnergyManager.getEnergy(placement);
 
         return new AbilityButton(
                 I18n.get("abilities.ronrockets.shield_intercept"),
@@ -39,11 +40,15 @@ public class ShieldInterceptAbility extends Ability {
                                 Style.EMPTY.withBold(true)
                         ),
                         FormattedCharSequence.forward(
-                                I18n.get("tooltip.ronrockets.shield_radius"),
+                                "Energy: " + energy + " / 500",
                                 Style.EMPTY
                         ),
                         FormattedCharSequence.forward(
-                                I18n.get("tooltip.ronrockets.shield_cooldown"),
+                                "Intercept Cost: 250",
+                                Style.EMPTY
+                        ),
+                        FormattedCharSequence.forward(
+                                "Refill: 10 energy per 2 ore",
                                 Style.EMPTY
                         )
                 ),
