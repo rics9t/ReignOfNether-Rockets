@@ -20,8 +20,11 @@ public class RocketEntity extends Entity {
         super(type, level);
     }
 
-    public void setData(BlockPos target, String attacker) {
+    public void setTarget(BlockPos target) {
         this.target = target;
+    }
+
+    public void setAttacker(String attacker) {
         this.attacker = attacker;
     }
 
@@ -36,21 +39,19 @@ public class RocketEntity extends Entity {
 
     @Override
     public void tick() {
-
         super.tick();
 
         if (level().isClientSide) return;
-
         if (target == null) return;
 
         double dx = target.getX() + 0.5 - getX();
         double dz = target.getZ() + 0.5 - getZ();
         double dy = target.getY() + 1 - getY();
 
-        double distance = Math.sqrt(dx * dx + dz * dz);
+        double horizontalDist = Math.sqrt(dx * dx + dz * dz);
 
-        // Banana-like arc
-        double arcHeight = 0.03 * distance;
+        // ✅ Banana arc
+        double arcHeight = 0.03 * horizontalDist;
 
         setDeltaMovement(
                 dx * 0.02,
@@ -60,8 +61,7 @@ public class RocketEntity extends Entity {
 
         move(MoverType.SELF, getDeltaMovement());
 
-        // Impact check
-        if (distance < 2.0) {
+        if (horizontalDist < 2.0) {
 
             RocketManager.resolveStrikeFromEntity(
                     new RocketStrike(attacker, blockPosition(), target, 0),
