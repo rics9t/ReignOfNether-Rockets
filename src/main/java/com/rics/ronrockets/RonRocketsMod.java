@@ -2,6 +2,7 @@ package com.rics.ronrockets;
 
 import com.rics.ronrockets.building.RocketBuildings;
 import com.rics.ronrockets.rocket.RocketManager;
+import com.rics.ronrockets.client.RocketClientEvents;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -20,5 +21,6 @@ public class RonRocketsMod {
 
         MinecraftForge.EVENT_BUS.register(RocketManager.class);
         MinecraftForge.EVENT_BUS.register(RocketPlacementHandler.class);
+        MinecraftForge.EVENT_BUS.register(RocketClientEvents.class);
     }
 }
