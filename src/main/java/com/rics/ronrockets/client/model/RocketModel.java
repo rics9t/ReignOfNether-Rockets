@@ -6,6 +6,8 @@ import com.rics.ronrockets.entity.RocketEntity;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.*;
+import net.minecraft.client.model.geom.ModelLayerLocation;
+import net.minecraft.resources.ResourceLocation;
 
 // Made with Blockbench 5.1.4
 // Exported for Minecraft version 1.17 or later with Mojang mappings
