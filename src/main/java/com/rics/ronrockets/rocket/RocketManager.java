@@ -6,6 +6,8 @@ import com.solegendary.reignofnether.unit.interfaces.Unit;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -18,7 +20,22 @@ public class RocketManager {
     private static final List<RocketStrike> ACTIVE_STRIKES = new ArrayList<>();
 
     public static void registerStrike(RocketStrike strike) {
-        ACTIVE_STRIKES.add(strike);
+
+    ACTIVE_STRIKES.add(strike);
+
+    // ✅ Notify defender players
+    ServerLevel level = BuildingServerEvents.getServerLevel();
+    if (level == null) return;
+
+    for (ServerPlayer player : level.getPlayers(p -> true)) {
+
+        if (player.getName().getString().equals(strike.attacker)) continue;
+
+        player.displayClientMessage(
+                Component.translatable("hud.ronrockets.rocket_incoming"),
+                true
+        );
+    }
     }
 
     @SubscribeEvent
