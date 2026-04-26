@@ -10,6 +10,7 @@ public class RocketBuildings {
     public static VillagerRocketSilo VILLAGER_SILO;
     public static MonsterRocketSilo MONSTER_SILO;
     public static PiglinRocketSilo PIGLIN_SILO;
+    public static ShieldArrayBuilding SHIELD_ARRAY;
 
     public static void register() {
 
@@ -29,6 +30,12 @@ public class RocketBuildings {
                 ReignOfNetherRegistries.BUILDING,
                 new ResourceLocation(RonRocketsMod.MODID, "piglin_rocket_silo"),
                 new PiglinRocketSilo()
+        );
+
+        SHIELD_ARRAY = Registry.register(
+                ReignOfNetherRegistries.BUILDING,
+                new ResourceLocation(RonRocketsMod.MODID, "shield_array"),
+                new ShieldArrayBuilding("shield_array")
         );
     }
 }
