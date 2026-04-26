@@ -45,37 +45,62 @@ public class RocketManager {
 
     private static void resolveStrike(RocketStrike strike, ServerLevel level) {
 
-        int radius = 8;
+    int radius = 8;
 
-        // ✅ DAMAGE BUILDINGS
-        for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
+    // ✅ Check Shield Interception FIRST
+    for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
 
-            if (!building.isBuilt) continue;
+        if (!(building.getBuilding() instanceof ShieldArrayBuilding)) continue;
+        if (!building.isBuilt) continue;
 
-            double dist = building.centrePos.distSqr(strike.targetPos);
-            if (dist > radius * radius) continue;
+        double dist = building.centrePos.distSqr(strike.targetPos);
 
-            float percent = building.isCapitol ? 0.40f : 0.80f;
+        if (dist <= ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) {
 
-            int blocksToDestroy = (int)(building.getBlocksTotal() * percent);
+            // Check cooldown
+            for (var ability : building.getAbilities()) {
+                if (ability instanceof com.rics.ronrockets.ability.ShieldInterceptAbility) {
 
-            building.destroyRandomBlocks(blocksToDestroy);
-
-            if (building.shouldBeDestroyed()) {
-                BuildingServerEvents.cancelBuilding(building, building.ownerName);
+                    if (ability.isOffCooldown(building)) {
+                        ability.setToMaxCooldown(building);
+                        return; // ✅ Rocket intercepted, cancel strike
+                    }
+                }
             }
         }
+    }
 
-        // ✅ DAMAGE UNITS
-        AABB area = new AABB(strike.targetPos).inflate(radius);
+    // ✅ DAMAGE BUILDINGS
+    for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
 
-        List<LivingEntity> entities =
-                level.getEntitiesOfClass(LivingEntity.class, area);
+        if (!building.isBuilt) continue;
 
-        for (LivingEntity entity : entities) {
-            if (entity instanceof Unit) {
-                entity.hurt(level.damageSources().generic(), 50f);
-            }
+        double dist = building.centrePos.distSqr(strike.targetPos);
+        if (dist > radius * radius) continue;
+
+        float percent = building.isCapitol ? 0.40f : 0.80f;
+
+        int blocksToDestroy = (int)(building.getBlocksTotal() * percent);
+
+        building.destroyRandomBlocks(blocksToDestroy);
+
+        if (building.shouldBeDestroyed()) {
+            BuildingServerEvents.cancelBuilding(building, building.ownerName);
         }
+    }
+
+    // ✅ DAMAGE UNITS
+    var area = new net.minecraft.world.phys.AABB(strike.targetPos).inflate(radius);
+
+    var entities = level.getEntitiesOfClass(
+            net.minecraft.world.entity.LivingEntity.class,
+            area
+    );
+
+    for (var entity : entities) {
+        if (entity instanceof com.solegendary.reignofnether.unit.interfaces.Unit) {
+            entity.hurt(level.damageSources().generic(), 50f);
+          }
+       }
     }
 }
