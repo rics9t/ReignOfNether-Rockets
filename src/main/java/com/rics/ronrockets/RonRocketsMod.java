@@ -4,6 +4,7 @@ import com.rics.ronrockets.building.RocketBuildings;
 import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.client.RocketClientEvents;
 import com.rics.ronrockets.entity.RocketEntities;
+import com.rics.ronrockets.shield.ShieldEnergyManager;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -24,5 +25,6 @@ public class RonRocketsMod {
         MinecraftForge.EVENT_BUS.register(RocketPlacementHandler.class);
         MinecraftForge.EVENT_BUS.register(RocketClientEvents.class);
         RocketEntities.register(modBus);
+        MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
     }
 }
