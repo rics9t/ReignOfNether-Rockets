@@ -1,0 +1,1119 @@
+package com.solegendary.reignofnether.minimap;
+
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
+import com.mojang.datafixers.util.Pair;
+import com.solegendary.reignofnether.ReignOfNether;
+import com.solegendary.reignofnether.alliance.AlliancesClient;
+import com.solegendary.reignofnether.blocks.BlockClientEvents;
+import com.solegendary.reignofnether.building.BuildingClientEvents;
+import com.solegendary.reignofnether.building.BuildingPlacement;
+import com.solegendary.reignofnether.building.RangeIndicator;
+import com.solegendary.reignofnether.building.buildings.placements.BridgePlacement;
+import com.solegendary.reignofnether.cursor.CursorClientEvents;
+import com.solegendary.reignofnether.fogofwar.FogOfWarClientEvents;
+import com.solegendary.reignofnether.guiscreen.TopdownGui;
+import com.solegendary.reignofnether.hud.Button;
+import com.solegendary.reignofnether.keybinds.Keybindings;
+import com.solegendary.reignofnether.orthoview.OrthoviewClientEvents;
+import com.solegendary.reignofnether.player.PlayerClientEvents;
+import com.solegendary.reignofnether.player.PlayerColors;
+import com.solegendary.reignofnether.player.PlayerServerboundPacket;
+import com.solegendary.reignofnether.registrars.PacketHandler;
+import com.solegendary.reignofnether.startpos.StartPos;
+import com.solegendary.reignofnether.startpos.StartPosClientEvents;
+import com.solegendary.reignofnether.blocks.NightCircleMode;
+import com.solegendary.reignofnether.tutorial.TutorialClientEvents;
+import com.solegendary.reignofnether.tutorial.TutorialStage;
+import com.solegendary.reignofnether.unit.UnitAction;
+import com.solegendary.reignofnether.unit.UnitClientEvents;
+import com.solegendary.reignofnether.unit.interfaces.Unit;
+import com.solegendary.reignofnether.faction.Faction;
+import com.solegendary.reignofnether.util.ArrayUtil;
+import com.solegendary.reignofnether.util.MiscUtil;
+import com.solegendary.reignofnether.util.MyMath;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.SnowLayerBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.Vec2;
+import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import org.joml.Matrix4f;
+import org.joml.Vector3d;
+import org.lwjgl.glfw.GLFW;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import static com.solegendary.reignofnether.hud.HudClientEvents.isMouseOverAnyButton;
+import static com.solegendary.reignofnether.blocks.BlockClientEvents.nightCircleMode;
+import static com.solegendary.reignofnether.util.MiscUtil.fcs;
+
+public class MinimapClientEvents {
+
+    private static final Minecraft MC = Minecraft.getInstance();
+    private static int worldRadius = 100; // how many world blocks should be mapped
+    private static int mapGuiRadius = 50; // actual size on the screen
+    private static int refreshTicks = 0;
+    public static final int CORNER_OFFSET = 10;
+    public static final int BG_OFFSET = 6;
+
+    private static boolean largeMap = false;
+    public static boolean isLargeMap() { return largeMap; }
+    private static boolean shouldToggleSize = false;
+    private static boolean markerMode = false;
+
+    public static boolean isMarkerInteractionActive() {
+        return markerMode || Keybindings.altMod.isDown();
+    }
+
+    private static final int UNIT_RADIUS = 3;
+    private static final int UNIT_THICKNESS = 1;
+    private static final int PLAYER_RADIUS = 5;
+    private static final int PLAYER_THICKNESS = 1;
+    private static final int BUILDING_RADIUS = 7;
+    private static final int BUILDING_THICKNESS = 2;
+    private static final int START_POS_RADIUS = 7;
+    private static final int START_POS_THICKNESS = 2;
+    private static final int MARKER_RADIUS = 16;
+    private static final int MARKER_THICKNESS = 3;
+    private static final int MARKER_PIXEL_OFFSET = 4; // shift rendered marker to better align with cursor
+
+    // rate-limit teleporting from dragging the minimap to prevent being kicked from packet spamming
+    private static long lastDragTeleportTimestamp = System.currentTimeMillis();
+
+    private static DynamicTexture mapTexture = new DynamicTexture(worldRadius * 2, worldRadius * 2, true);
+    private static RenderType mapRenderType = RenderType.textSeeThrough(Minecraft.getInstance().textureManager.register(
+        ReignOfNether.MOD_ID + "_" + "minimap",
+        mapTexture
+    ));
+    private static int[][] mapColoursTerrain = new int[worldRadius * 2][worldRadius * 2];
+    private static int[][] mapColoursOverlays = new int[worldRadius * 2][worldRadius * 2]; // view quad, units, buildings
+
+    private static int terrainPartition = 1;
+    private static final int TERRAIN_PARTITIONS_MAX = 10;
+    private static int darkTerrainPartition = 1;
+    private static final int DARK_TERRAIN_PARTITIONS_MAX = 5; // sub-partitions of terrain_partitions - so there will
+    // be 5*10 total
+    private static boolean forceUpdateAllPartitions = true;
+
+    private static int xc_world = 0; // world pos x centre, maps to xc
+    private static int zc_world = 0; // world pos zcentre, maps to yc
+    private static float xl, xc, xr, yt, yc, yb;
+
+    public static final ArrayList<MinimapUnit> minimapUnits = new ArrayList<>();
+    public static final ArrayList<MapMarker> mapMarkers = new ArrayList<>();
+
+    private static final float DARK = 0.40f;
+    private static final float EXTRA_DARK = 0.10f;
+
+    private static boolean lockedMap = false; // does map follow when moving offscreen?
+    private static boolean highlightAnimals = false; // apply glow effect (clientside only) to animals
+
+    public static boolean shouldHighlightAnimals() {
+        return highlightAnimals;
+    }
+
+    // objects for tracking serverside Units that don't yet exist on clientside
+    private static class MinimapUnit {
+        public BlockPos pos;
+        public final int id;
+        public final String ownerName;
+
+        public MinimapUnit(BlockPos pos, int id, String ownerName) {
+            this.pos = pos;
+            this.id = id;
+            this.ownerName = ownerName;
+        }
+    }
+
+    private static class MapMarker {
+        public final int x;
+        public final int z;
+        public final String playerName;
+        public int ticksRemaining;
+        public int ageTicks;
+
+        public MapMarker(int x, int z, String playerName) {
+            this.x = x;
+            this.z = z;
+            this.playerName = playerName;
+            this.ticksRemaining = 200; // 10 seconds
+            this.ageTicks = 0;
+        }
+
+        public boolean tick() {
+            ageTicks++;
+            ticksRemaining--;
+            return ticksRemaining <= 0;
+        }
+    }
+
+    public static void addMapMarker(int x, int z, String playerName) {
+        mapMarkers.add(new MapMarker(x, z, playerName));
+    }
+
+    public static void addMapMarkerForSelfAndAllies(int mouseX, int mouseY) {
+        if (Keybindings.altMod.isDown()){
+            mouseX += 2;
+            mouseY += 1;
+        } else {
+            mouseX -= 1;
+            mouseY += 1;
+        }
+        BlockPos markerPos = getWorldPosOnMinimap(mouseX, mouseY, false);
+        if (markerPos != null) {
+            PacketHandler.INSTANCE.sendToServer(new MapMarkerServerboundPacket(markerPos.getX(), markerPos.getZ()));
+        }
+    }
+
+    public static void removeMinimapUnit(int id) {
+        minimapUnits.removeIf(u -> u.id == id);
+    }
+
+    public static void syncMinimapUnits(BlockPos pos, int id, String ownerName) {
+        for (MinimapUnit unit : minimapUnits) {
+            if (unit.id == id) {
+                unit.pos = pos;
+                return;
+            }
+        }
+        minimapUnits.add(new MinimapUnit(pos, id, ownerName));
+    }
+
+    public static void setMapCentre(double x, double z) {
+        if (!lockedMap) {
+            xc_world = (int) x;
+            zc_world = (int) z;
+        }
+    }
+
+    public static int getMapGuiRadius() {
+        return mapGuiRadius;
+    }
+
+    private static void toggleMapSize() {
+        largeMap = !largeMap;
+        if (largeMap) {
+            worldRadius = 240;
+            mapGuiRadius = 120;
+        } else {
+            worldRadius = 120;
+            mapGuiRadius = 60;
+        }
+        mapTexture = new DynamicTexture(worldRadius * 2, worldRadius * 2, true);
+        mapRenderType = RenderType.textSeeThrough(Minecraft.getInstance().textureManager.register(
+            ReignOfNether.MOD_ID + "_" + "minimap",
+            mapTexture
+        ));
+        mapColoursTerrain = new int[worldRadius * 2][worldRadius * 2];
+        mapColoursOverlays = new int[worldRadius * 2][worldRadius * 2];
+        forceUpdateAllPartitions = true;
+    }
+
+    public static Button getToggleSizeButton() {
+        return new Button(largeMap ? "Close" : "Open large map",
+                14,
+                largeMap
+                        ? ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/icons/items/barrier.png")
+                        : ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/icons/items/map.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                Keybindings.keyM,
+                () -> false,
+                () -> !TutorialClientEvents.isAtOrPastStage(TutorialStage.MINIMAP_CLICK),
+                () -> true,
+                () -> shouldToggleSize = true,
+                null,
+                List.of(FormattedCharSequence.forward(largeMap
+                        ? I18n.get("hud.map.reignofnether.close")
+                        : I18n.get("hud.map.reignofnether.open"), Style.EMPTY))
+        );
+    }
+
+    public static Button getMarkerModeButton() {
+        return new Button("Marker",
+                14,
+                ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/target_top.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                null,
+                () -> markerMode,
+                () -> !Keybindings.altMod.isDown() && !isLargeMap(),
+                () -> Keybindings.altMod.isDown() || isLargeMap(),
+                () -> markerMode = !markerMode,
+                null,
+                List.of(markerMode
+                        ? fcs(I18n.get("hud.map.reignofnether.marker_mode_enabled"))
+                        : fcs(I18n.get("hud.map.reignofnether.marker_mode_disabled")))
+        );
+    }
+
+    public static Button getCamSensitivityButton() {
+        return new Button("Camera Sensitivity",
+                14,
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/icons/blocks/command_block_front.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                null,
+                () -> false,
+                () -> !TutorialClientEvents.isAtOrPastStage(TutorialStage.MINIMAP_CLICK) || !largeMap,
+                () -> true,
+                () -> OrthoviewClientEvents.adjustPanSensitivityMult(true),
+                () -> OrthoviewClientEvents.adjustPanSensitivityMult(false),
+                List.of(
+                        FormattedCharSequence.forward(I18n.get("hud.map.reignofnether.pan_sensitivity.tooltip1",
+                                Math.round(OrthoviewClientEvents.getPanSensitivityMult() * 10), Math.round(OrthoviewClientEvents.MAX_PAN_SENSITIVITY * 10)), Style.EMPTY),
+                        FormattedCharSequence.forward(I18n.get("hud.map.reignofnether.pan_sensitivity.tooltip2"), Style.EMPTY)
+                )
+        );
+    }
+
+    public static Button getNightCirclesModeButton() {
+        return new Button("Night Circles Mode",
+                14,
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/icons/blocks/repeating_command_block_front.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                null,
+                () -> false,
+                () -> !TutorialClientEvents.isAtOrPastStage(TutorialStage.MINIMAP_CLICK) || !largeMap,
+                () -> true,
+                () -> {
+                    if (nightCircleMode == NightCircleMode.ALL) {
+                        nightCircleMode = NightCircleMode.NO_OVERLAPS;
+                    } else if (nightCircleMode == NightCircleMode.NO_OVERLAPS) {
+                        nightCircleMode = NightCircleMode.OFF;
+                    } else if (nightCircleMode == NightCircleMode.OFF) {
+                        nightCircleMode = NightCircleMode.ALL;
+                    }
+                    for (BuildingPlacement building : BuildingClientEvents.getBuildings())
+                        if (building instanceof RangeIndicator ri)
+                            ri.updateHighlightBps();
+                },
+                null,
+                List.of(
+                    fcs(I18n.get("time.reignofnether.night_circle_mode_all"), nightCircleMode == NightCircleMode.ALL),
+                    fcs(I18n.get("time.reignofnether.night_circle_mode_no_overlaps"), nightCircleMode == NightCircleMode.NO_OVERLAPS),
+                    fcs(I18n.get("time.reignofnether.night_circle_mode_off"), nightCircleMode == NightCircleMode.OFF)
+                )
+        );
+    }
+
+    public static Button getMapLockButton() {
+        return new Button("Lock Map",
+                14,
+                lockedMap ?
+                        ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/icons/blocks/chain_command_block_front.png") :
+                        ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/icons/blocks/chain_command_block_front_dark.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                null,
+                () -> false,
+                () -> !TutorialClientEvents.isAtOrPastStage(TutorialStage.MINIMAP_CLICK) || !largeMap,
+                () -> true,
+                () -> {
+                    lockedMap = !lockedMap;
+                    if (!lockedMap && MC.player != null)
+                        setMapCentre(MC.player.getX(), MC.player.getZ());
+                },
+                null,
+                List.of(FormattedCharSequence.forward(lockedMap
+                        ? I18n.get("hud.map.reignofnether.lock_map.tooltip1.enabled")
+                        : I18n.get("hud.map.reignofnether.lock_map.tooltip1.disabled"), Style.EMPTY)
+                )
+        );
+    }
+
+    public static Button getHighlightAnimalsButton() {
+        return new Button("Highlight Animals",
+                14,
+                highlightAnimals ?
+                        ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/mobheads/sheep.png") :
+                        ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/mobheads/sheep_dark.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                null,
+                () -> false,
+                () -> !TutorialClientEvents.isAtOrPastStage(TutorialStage.MINIMAP_CLICK) || !largeMap,
+                () -> true,
+                () -> {
+                    highlightAnimals = !highlightAnimals;
+                },
+                null,
+                List.of(FormattedCharSequence.forward(highlightAnimals
+                        ? I18n.get("hud.map.reignofnether.highlight_animals.enabled")
+                        : I18n.get("hud.map.reignofnether.highlight_animals.disabled"), Style.EMPTY)
+                )
+        );
+    }
+
+    public static Button getCameraRotateCWButton() {
+        return new Button("Rotate camera clockwise",
+                14,
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/rotate_cw.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                Keybindings.rotCW,
+                () -> false,
+                () -> !Keybindings.altMod.isDown() && !isLargeMap(),
+                () -> Keybindings.altMod.isDown() || isLargeMap(),
+                () -> OrthoviewClientEvents.fixedRotateCam(true),
+                null,
+                List.of(
+                        fcs(I18n.get("hud.map.reignofnether.rotate_cw.tooltip1")),
+                        fcs(I18n.get("hud.map.reignofnether.rotate_cw.tooltip2"))
+                )
+        );
+    }
+
+    public static Button getCameraRotateCCWButton() {
+        return new Button("Rotate camera counter-clockwise",
+                14,
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/rotate_ccw.png"),
+                ResourceLocation.fromNamespaceAndPath(ReignOfNether.MOD_ID, "textures/hud/icon_frame.png"),
+                Keybindings.rotCCW,
+                () -> false,
+                () -> !Keybindings.altMod.isDown() && !isLargeMap(),
+                () -> Keybindings.altMod.isDown() || isLargeMap(),
+                () -> OrthoviewClientEvents.fixedRotateCam(false),
+                null,
+                List.of(
+                        fcs(I18n.get("hud.map.reignofnether.rotate_ccw.tooltip1")),
+                        fcs(I18n.get("hud.map.reignofnether.rotate_ccw.tooltip2"))
+                )
+        );
+    }
+
+    public static void updateMapTexture() {
+        if (MC.player == null) {
+            return;
+        }
+
+        // if camera is off the map, start panning the centre of the map
+        double xCam = MC.player.getX();
+        double zCam = MC.player.getZ();
+        double xDiff1 = xCam - (xc_world + worldRadius);
+
+        if (!lockedMap) {
+            if (xDiff1 > 0) {
+                xc_world += xDiff1;
+            }
+            double zDiff1 = zCam - (zc_world + worldRadius);
+            if (zDiff1 > 0) {
+                zc_world += zDiff1;
+            }
+            double xDiff2 = xCam - (xc_world - worldRadius);
+            if (xDiff2 < 0) {
+                xc_world += xDiff2;
+            }
+            double zDiff2 = zCam - (zc_world - worldRadius);
+            if (zDiff2 < 0) {
+                zc_world += zDiff2;
+            }
+        }
+
+        NativeImage pixels = mapTexture.getPixels();
+        if (pixels != null) {
+            int i = 0;
+            for (int z = 0; z < worldRadius * 2; z++) {
+                for (int x = 0; x < worldRadius * 2; x++) {
+                    if (mapColoursOverlays[x][z] != 0) {
+                        pixels.setPixelRGBA(x, z, mapColoursOverlays[x][z]);
+                    } else {
+                        pixels.setPixelRGBA(x, z, mapColoursTerrain[x][z]);
+                    }
+                    i += 1;
+                }
+            }
+            mapTexture.upload();
+        }
+    }
+
+    private static void updateMapTerrain(int partition, int darkPartition) {
+        if (MC.level == null || MC.player == null) {
+            return;
+        }
+
+        int zMin = zc_world - worldRadius;
+        int zMax = zc_world + worldRadius;
+        int xMin = xc_world - worldRadius;
+        int xMax = xc_world + worldRadius;
+
+        Set<ChunkPos> brightChunks = FogOfWarClientEvents.brightChunks;
+
+        // draw terrain blocks
+        for (int z = zMin; z < zMax; z++) {
+            boolean skipDarkPartition = false;
+
+            // eg. if z ranges from -500 to 300, that's a range of 800
+            // if we have 10 partitions, partition 3 should range from:
+            // zPartMin = (800 / 10) * 2 = 160
+            // xPartMax = (800 / 10) * 3 = 240
+            // so only update this pixel if the z row is between 160 and 240
+            if (!forceUpdateAllPartitions) {
+                int zMaxN = zMax - zMin; // zMax normalised to 0 -> (worldRadius * 2)
+                int zPartMin = (zMaxN / TERRAIN_PARTITIONS_MAX) * (partition - 1);
+                int zPartMax = (zMaxN / TERRAIN_PARTITIONS_MAX) * partition;
+                int zN = z - zMin;
+                if (zN < zPartMin || zN >= zPartMax) {
+                    continue;
+                }
+
+                int zPartMind = (zMaxN / DARK_TERRAIN_PARTITIONS_MAX) * (darkPartition - 1);
+                int zPartMaxd = (zMaxN / DARK_TERRAIN_PARTITIONS_MAX) * darkPartition;
+                if (zN < zPartMind || zN >= zPartMaxd) {
+                    skipDarkPartition = true;
+                }
+            }
+
+            for (int x = xMin; x < xMax; x++) {
+
+                boolean isBright = false;
+                if (FogOfWarClientEvents.isEnabled()) {
+                    // apply a much slower update rate to dark chunks
+                    for (ChunkPos chunkPos : brightChunks) {
+                        if (x >= chunkPos.getMinBlockX() && x <= chunkPos.getMaxBlockX() && z >= chunkPos.getMinBlockZ()
+                            && z <= chunkPos.getMaxBlockZ()) {
+                            isBright = true;
+                            break;
+                        }
+                    }
+                    if (!isBright && skipDarkPartition) {
+                        continue;
+                    }
+                }
+
+                int y = MC.level.getChunkAt(new BlockPos(x, 0, z)).getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+                BlockState bs;
+                do {
+                    bs = MC.level.getBlockState(new BlockPos(x, y, z));
+                    if (bs.getBlock() instanceof SnowLayerBlock) {
+                        int layers = bs.getValue(SnowLayerBlock.LAYERS);
+                        y += (int) (layers * (1.0F / 8.0F));
+                        break;
+                    }
+                    if (!bs.isSolid() && bs.getFluidState().isEmpty() && y > 0) {
+                        y -= 1;
+                    } else {
+                        break;
+                    }
+                } while (true);
+
+                int yNorth = MC.level.getChunkAt(new BlockPos(x, 0, z - 1))
+                    .getHeight(Heightmap.Types.WORLD_SURFACE, x, z - 1);
+                BlockState bsNorth;
+                do {
+                    bsNorth = MC.level.getBlockState(new BlockPos(x, yNorth, z - 1));
+                    if (bsNorth.getBlock() instanceof SnowLayerBlock) {
+                        int layersNorth = bsNorth.getValue(SnowLayerBlock.LAYERS);
+                        yNorth += (int) (layersNorth * (1.0F / 8.0F));
+                        break;
+                    }
+                    if (!bsNorth.isSolid() && bsNorth.getFluidState().isEmpty() && yNorth > 0) {
+                        yNorth -= 1;
+                    } else {
+                        break;
+                    }
+                } while (true);
+
+                MapColor mat = MC.level.getBlockState(new BlockPos(x, yNorth, z - 1)).getMapColor(MC.level, new BlockPos(x, yNorth, z - 1));
+                int rgb = mat.col;
+                if (bs.getBlock() instanceof SnowLayerBlock) {
+                    rgb = 0xFFFFFF;
+                }
+
+                // shade blocks to give elevation effects, excluding liquids and nonblocking blocks (eg. grass, flowers)
+                if (MC.level.getBlockState(new BlockPos(x, yNorth, z - 1)).getFluidState().isEmpty()) {
+                    if (yNorth > y) {
+                        rgb = MiscUtil.shadeHexRGB(rgb, 0.82F);
+                    } else if (yNorth < y) {
+                        rgb = MiscUtil.shadeHexRGB(rgb, 1.16F);
+                    }
+                } else { // shade liquid based on depth
+                    int depth = 0;
+                    int depthMax = 20;
+                    BlockState matBelow;
+                    do {
+                        depth += 1;
+                        matBelow = MC.level.getBlockState(new BlockPos(x, y - depth, z));
+                    } while (!matBelow.getFluidState().isEmpty() && depth < depthMax);
+
+                    // only reduce shade every nth step to have the map look sharper
+                    depth = (int) (5 * (Math.ceil(Math.abs(depth / 5))));
+
+                    rgb = MiscUtil.shadeHexRGB(rgb, 1.2F - (0.025F * depth));
+                }
+
+                // normalise xz's to colour array ranges
+                int x0 = x - xc_world + worldRadius;
+                int z0 = z - zc_world + worldRadius;
+
+                BlockPos pos = new BlockPos(x, 0, z);
+                if (!MC.level.getWorldBorder().isWithinBounds(pos)) {
+                    rgb = MiscUtil.shadeHexRGB(rgb, EXTRA_DARK);
+                } else if (!FogOfWarClientEvents.isInBrightChunk(pos)) {
+                    rgb = MiscUtil.shadeHexRGB(rgb, DARK);
+                }
+
+
+                // append 0xFF to include 100% alpha (<< 4 shifts by 1 hex digit)
+                mapColoursTerrain[x0][z0] = MiscUtil.reverseHexRGB(rgb) | (0xFF << 24);
+            }
+        }
+        forceUpdateAllPartitions = false;
+    }
+
+    private static void updateMapViewQuad() {
+        if (MC.level == null || MC.player == null) {
+            return;
+        }
+
+        // get world position of corners of the screen
+        int yOffset = 0;//(int) (MC.player.getY() - 100) * 5;
+
+        Vector3d tl = MiscUtil.screenPosToWorldPos(MC, 0, -yOffset);
+        Vector3d bl = MiscUtil.screenPosToWorldPos(MC, 0, MC.getWindow().getGuiScaledHeight() - yOffset);
+        Vector3d br = MiscUtil.screenPosToWorldPos(MC, MC.getWindow().getGuiScaledWidth(), MC.getWindow().getGuiScaledHeight() - yOffset);
+        Vector3d tr = MiscUtil.screenPosToWorldPos(MC, MC.getWindow().getGuiScaledWidth(), -yOffset);
+
+        Vector3d[] corners = new Vector3d[] { tl, bl, br, tr };
+        // adjust corners according to camera angle
+        Vector3d lookVector = MiscUtil.getPlayerLookVector(MC);
+        corners[0] = MyMath.addVector3d(corners[0], lookVector, 90 - OrthoviewClientEvents.getCamRotY());
+        corners[1] = MyMath.addVector3d(corners[1], lookVector, 75 - OrthoviewClientEvents.getCamRotY());
+        corners[2] = MyMath.addVector3d(corners[2], lookVector, 75 - OrthoviewClientEvents.getCamRotY());
+        corners[3] = MyMath.addVector3d(corners[3], lookVector, 90 - OrthoviewClientEvents.getCamRotY());
+
+        int zMin = zc_world - worldRadius;
+        int zMax = zc_world + worldRadius;
+        int xMin = xc_world - worldRadius;
+        int xMax = xc_world + worldRadius;
+
+        // draw terrain blocks
+        for (int z = zMin; z < zMax; z++) {
+            xLoop:
+            for (int x = xMin; x < xMax; x++) {
+
+                // draw view quad
+                for (int i = 0; i < corners.length; i++) {
+                    int j = i + 1;
+                    if (j >= corners.length) {
+                        j = 0;
+                    }
+
+                    if (MyMath.isPointOnLine(new Vec2((float) corners[i].x, (float) corners[i].z),
+                        new Vec2((float) corners[j].x, (float) corners[j].z),
+                        new Vec2(x, z),
+                        OrthoviewClientEvents.getZoom() * 2
+                        // larger = thicker line
+                    )) {
+                        int x0 = x - xc_world + worldRadius;
+                        int z0 = z - zc_world + worldRadius;
+                        mapColoursOverlays[x0][z0] = 0xFFFFFFFF;
+                        continue xLoop;
+                    }
+                }
+            }
+        }
+    }
+
+    private static void updateNightCircles() {
+
+        // get list of night source centre:range pairs
+        ArrayList<Pair<BlockPos, Integer>> nightSources = new ArrayList<>();
+
+        for (Pair<BlockPos, Integer> ns : BlockClientEvents.nightSourceOrigins) {
+
+            int xc = ns.getFirst().getX() + (BUILDING_RADIUS / 2);
+            int zc = ns.getFirst().getZ() + (BUILDING_RADIUS / 2);
+            int xN = xc - xc_world + (mapGuiRadius * 2);
+            int zN = zc - zc_world + (mapGuiRadius * 2);
+
+            nightSources.add(new Pair<>(new BlockPos(xN, 0, zN), ns.getSecond()));
+        }
+
+        for (Pair<BlockPos, Integer> ns : nightSources) {
+            Set<BlockPos> nightCircleBps;
+            if (BlockClientEvents.nightCircleMode == NightCircleMode.NO_OVERLAPS)
+                nightCircleBps = MiscUtil.CircleUtil.getCircleWithCulledOverlaps(ns.getFirst(), ns.getSecond(), nightSources);
+            else
+                nightCircleBps = MiscUtil.CircleUtil.getCircle(ns.getFirst(), ns.getSecond());
+
+            ArrayList<BlockPos> nightCircleBpsThick = new ArrayList<>();
+            // raise thickness
+            for (BlockPos bp : nightCircleBps) {
+                nightCircleBpsThick.add(bp);
+                nightCircleBpsThick.add(bp.offset(-1,0,0));
+                nightCircleBpsThick.add(bp.offset(0,0,-1));
+            }
+            for (BlockPos bp : nightCircleBpsThick) {
+                if (bp.getX() > 0 && bp.getX() < mapColoursOverlays.length &&
+                    bp.getZ() > 0 && bp.getZ() < mapColoursOverlays[0].length)
+                    mapColoursOverlays[bp.getX()][bp.getZ()] = MiscUtil.reverseHexRGB(0x0) | (0xFF << 24);
+            }
+        }
+    }
+
+    private static void updateMapUnitsAndBuildings() {
+        // draw buildings
+        for (BuildingPlacement building : BuildingClientEvents.getBuildings()) {
+
+            if (!building.isExploredClientside || building instanceof BridgePlacement)
+                continue;
+
+            int xc = building.centrePos.getX() + (BUILDING_RADIUS / 2);
+            int zc = building.centrePos.getZ() + (BUILDING_RADIUS / 2);
+            var rgb = PlayerColors.getPlayerDisplayColorHex(building.ownerName);
+            if (!FogOfWarClientEvents.isBuildingInBrightChunk(building)) {
+                var color = new Color(rgb);
+                color = new Color(color.getRed() / 2, color.getGreen() / 2, color.getBlue() / 2);
+                rgb = color.getRGB();
+            }
+
+
+            drawBuildingOnMap(xc, zc, rgb);
+        }
+        // draw starting locations
+        if (MC.level != null && StartPosClientEvents.isEnabled() &&
+                !StartPosClientEvents.isStarting &&
+                !PlayerClientEvents.rtsLocked) {
+            drawStartingPosesOnMap();
+        }
+
+        // draw players
+        if (MC.level != null) {
+            for (Player player : MC.level.players()) {
+                if (!FogOfWarClientEvents.isInBrightChunk(player))
+                    continue;
+                drawPlayerOnMap(player.getOnPos().getX(), player.getOnPos().getZ(), player);
+            }
+        }
+
+        // draw units
+        for (LivingEntity entity : UnitClientEvents.getAllUnits()) {
+            if (!FogOfWarClientEvents.isInBrightChunk(entity))
+                continue;
+            var colorHex = PlayerColors.getPlayerDisplayColorHex(entity instanceof Unit unit ? unit.getOwnerName() : null);
+            drawUnitOnMap(entity.getOnPos().getX(),
+                    entity.getOnPos().getZ(),
+                    colorHex
+            );
+        }
+        for (MinimapUnit minimapUnit : minimapUnits) {
+            if (!FogOfWarClientEvents.isInBrightChunk(minimapUnit.pos) || MC.player == null)
+                continue;
+
+            String unitOwnerName = minimapUnit.ownerName;
+            var colorHex = PlayerColors.getPlayerDisplayColorHex(unitOwnerName);
+
+            drawUnitOnMap(
+                    minimapUnit.pos.getX(),
+                    minimapUnit.pos.getZ(),
+                    colorHex
+            );
+        }
+
+        // draw map markers
+        for (MapMarker marker : mapMarkers) {
+            drawMapMarker(marker);
+        }
+
+    }
+
+    private static void drawBuildingOnMap(int xc, int zc, int color) {
+        for (int x = xc - BUILDING_RADIUS; x < xc + BUILDING_RADIUS; x++) {
+            for (int z = zc - BUILDING_RADIUS; z < zc + BUILDING_RADIUS; z++) {
+                if (isWorldXZinsideMap(x, z)) {
+                    int x0 = x - xc + BUILDING_RADIUS;
+                    int z0 = z - zc + BUILDING_RADIUS;
+
+                    // if pixel is on the edge of the square keep it coloured black
+                    var rgb = (x0 < BUILDING_THICKNESS || x0 >= (BUILDING_RADIUS * 2) - BUILDING_THICKNESS ||
+                            z0 < BUILDING_THICKNESS || z0 >= (BUILDING_RADIUS * 2) - BUILDING_THICKNESS)
+                            ? 0x000000
+                            : color;
+
+                    int xN = x - xc_world + (mapGuiRadius * 2);
+                    int zN = z - zc_world + (mapGuiRadius * 2);
+
+                    mapColoursOverlays[xN][zN] = MiscUtil.reverseHexRGB(rgb) | (0xFF << 24);
+                }
+            }
+        }
+    }
+
+    private static void drawUnitOnMap(int xc, int zc, int color) {
+        for (int x = xc - UNIT_RADIUS; x < xc + UNIT_RADIUS; x++) {
+            for (int z = zc - UNIT_RADIUS; z < zc + UNIT_RADIUS; z++) {
+                if (isWorldXZinsideMap(x, z)) {
+                    int x0 = x - xc + UNIT_RADIUS;
+                    int z0 = z - zc + UNIT_RADIUS;
+
+                    // if pixel is on the edge of the square keep it coloured black
+                    var rgb = (x0 < UNIT_THICKNESS || x0 >= (UNIT_RADIUS * 2) - UNIT_THICKNESS ||
+                            z0 < UNIT_THICKNESS || z0 >= (UNIT_RADIUS * 2) - UNIT_THICKNESS)
+                            ? 0x000000
+                            : color;
+
+                    int xN = x - xc_world + (mapGuiRadius * 2);
+                    int zN = z - zc_world + (mapGuiRadius * 2);
+
+                    mapColoursOverlays[xN][zN] = MiscUtil.reverseHexRGB(rgb) | (0xFF << 24);
+                }
+            }
+        }
+    }
+
+    private static void drawPlayerOnMap(int xc, int zc, Player player) {
+        if (MC.player == null)
+            return;
+        String thisPlayerName = MC.player.getName().getString();
+        String thatPlayerName = player.getName().getString();
+        if (thisPlayerName.equals(thatPlayerName))
+            return;
+        if (player.isSpectator() || player.isCreative())
+            return;
+
+        for (int x = xc - PLAYER_RADIUS; x < xc + PLAYER_RADIUS; x++) {
+            for (int z = zc - PLAYER_RADIUS; z < zc + PLAYER_RADIUS; z++) {
+                if (isWorldXZinsideMap(x, z)) {
+                    int x0 = x - xc + PLAYER_RADIUS;
+                    int z0 = z - zc + PLAYER_RADIUS;
+                    int rgb = 0x000000;
+
+                    // if pixel is on the edge of the square keep it coloured black
+                    if (!(
+                            x0 < PLAYER_THICKNESS || x0 >= (PLAYER_RADIUS * 2) - PLAYER_THICKNESS ||
+                                    z0 < PLAYER_THICKNESS || z0 >= (PLAYER_RADIUS * 2) - PLAYER_THICKNESS
+                    )) {
+                        if (AlliancesClient.isAllied(thisPlayerName, thatPlayerName))
+                            rgb = 0x3232FF;
+                        else
+                            rgb = 0xFF0000;
+                    }
+                    int xN = x - xc_world + (mapGuiRadius * 2);
+                    int zN = z - zc_world + (mapGuiRadius * 2);
+
+                    mapColoursOverlays[xN][zN] = MiscUtil.reverseHexRGB(rgb) | (0xFF << 24);
+                }
+            }
+        }
+    }
+
+    private static void drawStartingPosesOnMap() {
+        if (MC.player == null)
+            return;
+
+        for (StartPos startPos : StartPosClientEvents.startPoses) {
+            int xc = startPos.pos.getX();
+            int zc = startPos.pos.getZ();
+
+            for (int x = xc - START_POS_RADIUS; x < xc + START_POS_RADIUS; x++) {
+                for (int z = zc - START_POS_RADIUS; z < zc + START_POS_RADIUS; z++) {
+                    if (isWorldXZinsideMap(x, z)) {
+                        int x0 = x - xc + START_POS_RADIUS;
+                        int z0 = z - zc + START_POS_RADIUS;
+                        int rgb = 0x000000;
+
+                        // if pixel is on the edge of the square keep it coloured black
+                        if (!(x0 < START_POS_THICKNESS || x0 >= (START_POS_RADIUS * 2) - START_POS_THICKNESS ||
+                                z0 < START_POS_THICKNESS || z0 >= (START_POS_RADIUS * 2) - START_POS_THICKNESS
+                        )) {
+                            rgb = PlayerColors.getPlayerDisplayColorHex(startPos.playerName);
+                            if (startPos.faction == Faction.NONE)
+                                rgb = 0xFFFF00;
+                        }
+
+                        int xN = x - xc_world + (mapGuiRadius * 2);
+                        int zN = z - zc_world + (mapGuiRadius * 2);
+
+                        mapColoursOverlays[xN][zN] = MiscUtil.reverseHexRGB(rgb) | (0xFF << 24);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void drawMapMarker(MapMarker marker) {
+        int xc = marker.x;
+        int zc = marker.z;
+        int color = getPulsingMarkerColor(marker);
+        float alphaPulse = MiscUtil.getOscillatingFloat(0.45d, 1.0d, marker.ageTicks * 35L);
+        int alpha = Mth.clamp((int) (alphaPulse * 255f), 90, 255);
+
+        for (int x = xc - MARKER_RADIUS; x < xc + MARKER_RADIUS; x++) {
+            for (int z = zc - MARKER_RADIUS; z < zc + MARKER_RADIUS; z++) {
+                if (isWorldXZinsideMap(x, z)) {
+                    double dist = Math.sqrt(Math.pow(x - xc, 2) + Math.pow(z - zc, 2));
+
+                    boolean draw = false;
+
+                    // Draw concentric rings
+                    if (dist > MARKER_RADIUS - MARKER_THICKNESS && dist < MARKER_RADIUS) draw = true;
+                    if (dist > MARKER_RADIUS * 0.6 - MARKER_THICKNESS && dist < MARKER_RADIUS * 0.6) draw = true;
+                    if (dist > MARKER_RADIUS * 0.2 - MARKER_THICKNESS && dist < MARKER_RADIUS * 0.2) draw = true;
+
+                    if (draw) {
+                        int xN = x - xc_world + (mapGuiRadius * 2) + MARKER_PIXEL_OFFSET;
+                        int zN = z - zc_world + (mapGuiRadius * 2);
+                        if (xN >= 0 && xN < mapColoursOverlays.length && zN >= 0 && zN < mapColoursOverlays[0].length) {
+                            mapColoursOverlays[xN][zN] = MiscUtil.reverseHexRGB(color) | (alpha << 24);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static int getPulsingMarkerColor(MapMarker marker) {
+        int baseColor = PlayerColors.getPlayerDisplayColorHex(marker.playerName);
+        float pulse = MiscUtil.getOscillatingFloat(0.35d, 1.0d, marker.ageTicks * 25L);
+
+        int r = Mth.clamp((int) (((baseColor >> 16) & 0xFF) * pulse), 0, 255);
+        int g = Mth.clamp((int) (((baseColor >> 8) & 0xFF) * pulse), 0, 255);
+        int b = Mth.clamp((int) ((baseColor & 0xFF) * pulse), 0, 255);
+
+        return (r << 16) | (g << 8) | b;
+    }
+
+
+    // checks whether a given X Z in the world is part of our map
+    public static boolean isWorldXZinsideMap(int x, int z) {
+        return x >= xc_world - worldRadius && x < xc_world + worldRadius && z >= zc_world - worldRadius
+            && z < zc_world + worldRadius;
+    }
+
+    private static void renderMap(GuiGraphics guiGraphics) {
+        PoseStack stack = guiGraphics.pose();
+        Matrix4f matrix4f = stack.last().pose();
+
+        // place vertices in a diamond shape - left, centre, right, top, centre, bottom
+        // map vertex coordinates (left, centre, right, top, centre, bottom)
+        xl = MC.getWindow().getGuiScaledWidth() - (mapGuiRadius * 2) - CORNER_OFFSET;
+        xc = MC.getWindow().getGuiScaledWidth() - mapGuiRadius - CORNER_OFFSET;
+        xr = MC.getWindow().getGuiScaledWidth() - CORNER_OFFSET;
+        yt = MC.getWindow().getGuiScaledHeight() - (mapGuiRadius * 2) - CORNER_OFFSET;
+        yc = MC.getWindow().getGuiScaledHeight() - mapGuiRadius - CORNER_OFFSET;
+        yb = MC.getWindow().getGuiScaledHeight() - CORNER_OFFSET;
+
+        // background vertex coords need to be slightly larger
+        float xl_bg = xl - BG_OFFSET;
+        float xc_bg = xc;
+        float xr_bg = xr + BG_OFFSET;
+        float yt_bg = yt - BG_OFFSET;
+        float yc_bg = yc;
+        float yb_bg = yb + BG_OFFSET;
+
+        // render map background first
+        ResourceLocation iconFrameResource = ResourceLocation.fromNamespaceAndPath(
+            ReignOfNether.MOD_ID,
+            "textures/hud/map_background.png"
+        );
+        RenderSystem.setShaderTexture(0, iconFrameResource);
+        // code taken from GuiComponent.blit()
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.vertex(matrix4f, xc_bg, yb_bg, 0.0F).uv(0.0F, 1.0F).endVertex();
+        bufferbuilder.vertex(matrix4f, xr_bg, yc_bg, 0.0F).uv(1.0F, 1.0F).endVertex();
+        bufferbuilder.vertex(matrix4f, xc_bg, yt_bg, 0.0F).uv(1.0F, 0.0F).endVertex();
+        bufferbuilder.vertex(matrix4f, xl_bg, yc_bg, 0.0F).uv(0.0F, 0.0F).endVertex();
+
+        BufferUploader.drawWithShader(bufferbuilder.end());
+
+        // render map itself
+        MultiBufferSource.BufferSource buffer = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        VertexConsumer consumer = buffer.getBuffer(mapRenderType);
+        consumer.vertex(matrix4f, xc, yb, 0.0F).color(255, 255, 255, 255).uv(0.0F, 1.0F).uv2(255).endVertex();
+        consumer.vertex(matrix4f, xr, yc, 0.0F).color(255, 255, 255, 255).uv(1.0F, 1.0F).uv2(255).endVertex();
+        consumer.vertex(matrix4f, xc, yt, 0.0F).color(255, 255, 255, 255).uv(1.0F, 0.0F).uv2(255).endVertex();
+        consumer.vertex(matrix4f, xl, yc, 0.0F).color(255, 255, 255, 255).uv(0.0F, 0.0F).uv2(255).endVertex();
+
+        buffer.endBatch();
+    }
+
+    // https://stackoverflow.com/questions/27022064/detect-click-in-a-diamond
+    public static boolean isPointInsideMinimap(double x, double y) {
+        double dx = Math.abs(x - xc);
+        double dy = Math.abs(y - yc);
+        double d = dx / (mapGuiRadius * 2) + dy / (mapGuiRadius * 2);
+        return d <= 0.5;
+    }
+
+    // given an x and y on the screen that the player clicked, return the world position of that spot
+    private static BlockPos getWorldPosOnMinimap(float x, float y, boolean offsetForCamera) {
+        if (!isPointInsideMinimap(x, y) || CursorClientEvents.isBoxSelecting() || MC.level == null) {
+            return null;
+        }
+
+        float pixelsToBlocks = (float) worldRadius / (float) mapGuiRadius;
+
+        // offset x,y so that user clicks the centre of the view quad instead of bottom border
+        if (offsetForCamera) {
+            float camRotX = OrthoviewClientEvents.getCamRotX();
+            double radius = OrthoviewClientEvents.getZoom() * 0.5F / pixelsToBlocks;
+            double angleRad = Math.toRadians(camRotX - 315.0);
+            x -= radius * Math.cos(angleRad);
+            y -= radius * Math.sin(angleRad);
+        }
+        Vec2 clicked = MyMath.rotateCoords(x - xc, y - yc, 45);
+
+        double xWorld = xc_world + clicked.x * pixelsToBlocks * Math.sqrt(2);
+        double zWorld = zc_world + clicked.y * pixelsToBlocks * Math.sqrt(2);
+        int roundedX = Mth.floor(xWorld + 0.5d);
+        int roundedZ = Mth.floor(zWorld + 0.5d);
+        int roundedY = MiscUtil.getHighestNonAirBlock(MC.level, new BlockPos(roundedX, 0, roundedZ)).getY();
+
+        return new BlockPos(roundedX, roundedY, roundedZ);
+    }
+
+    @SubscribeEvent
+    public static void onMouseDrag(ScreenEvent.MouseDragged.Pre evt) {
+        if (!OrthoviewClientEvents.isEnabled() ||
+                OrthoviewClientEvents.isCameraLocked() ||
+                !(MC.screen instanceof TopdownGui)) {
+            return;
+        }
+
+        if (markerMode) {
+            return;
+        }
+
+        // when clicking on map move player there
+        if (evt.getMouseButton() == GLFW.GLFW_MOUSE_BUTTON_1 &&
+            !Keybindings.shiftMod.isDown() && !OrthoviewClientEvents.isCameraLocked() &&
+            lastDragTeleportTimestamp < System.currentTimeMillis() - 100) {
+
+            lastDragTeleportTimestamp = System.currentTimeMillis();
+            BlockPos moveTo = getWorldPosOnMinimap((float) evt.getMouseX(), (float) evt.getMouseY(), true);
+            if (MC.player != null && moveTo != null) {
+                PlayerServerboundPacket.teleportPlayer(
+                    (double) moveTo.getX(),
+                    MC.player.getY(),
+                    (double) moveTo.getZ()
+                );
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre evt) {
+        if (!OrthoviewClientEvents.isEnabled() ||
+            OrthoviewClientEvents.isCameraLocked() ||
+            !(MC.screen instanceof TopdownGui)) {
+            return;
+        }
+        boolean altDown = Keybindings.altMod.isDown();
+
+        // when clicking on map move player there
+        if (evt.getButton() == GLFW.GLFW_MOUSE_BUTTON_1 && !isMouseOverAnyButton()) {
+            BlockPos moveTo = getWorldPosOnMinimap((float) evt.getMouseX(), (float) evt.getMouseY(), true);
+
+            if (MC.player != null && moveTo != null) {
+                if (markerMode) {
+                    addMapMarkerForSelfAndAllies((int) evt.getMouseX(), (int) evt.getMouseY());
+                } else if (!altDown && Keybindings.shiftMod.isDown()) {
+                    setMapCentre(moveTo.getX(), moveTo.getZ());
+                    forceUpdateAllPartitions = true;
+                    TutorialClientEvents.clickedMinimap = true;
+                    PlayerServerboundPacket.teleportPlayer(
+                        (double) moveTo.getX(),
+                        MC.player.getY(),
+                        (double) moveTo.getZ()
+                    );
+                } else if (!altDown) {
+                    TutorialClientEvents.clickedMinimap = true;
+                    PlayerServerboundPacket.teleportPlayer(
+                        (double) moveTo.getX(),
+                        MC.player.getY(),
+                        (double) moveTo.getZ()
+                    );
+                }
+            }
+        } else if (evt.getButton() == GLFW.GLFW_MOUSE_BUTTON_2) {
+            BlockPos moveTo = getWorldPosOnMinimap((float) evt.getMouseX(), (float) evt.getMouseY(), false);
+            if (moveTo == null) {
+                return;
+            }
+            if (altDown) {
+                addMapMarkerForSelfAndAllies((int) evt.getMouseX(), (int) evt.getMouseY());
+                evt.setCanceled(true);
+                return;
+            }
+            if (!UnitClientEvents.getSelectedUnits().isEmpty()) {
+                var ids = UnitClientEvents.getSelectedUnits();
+                var idArray = ArrayUtil.livingEntityListToIdArray(ids);
+                UnitClientEvents.sendUnitCommandManual(UnitAction.MOVE,
+                    -1,
+                    idArray,
+                    moveTo
+                );
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderOverlay(RenderGuiOverlayEvent.Post evt) {
+        if (!OrthoviewClientEvents.isEnabled() || MC.isPaused()
+            || !TutorialClientEvents.isAtOrPastStage(TutorialStage.MINIMAP_CLICK)) {
+            return;
+        }
+
+        // toggle here to ensure it doesn't happen in the middle of the updates
+        if (shouldToggleSize) {
+            shouldToggleSize = false;
+            toggleMapSize();
+        }
+
+        renderMap(evt.getGuiGraphics());
+
+        //MiscUtil.drawDebugStrings(evt.getGuiGraphics(), MC.font, new String[] {
+        //        "camrotX: " + OrthoviewClientEvents.getCamRotX()
+        //});
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent evt) {
+        if (evt.phase != TickEvent.Phase.END)
+            return;
+
+        updateMapTerrain(terrainPartition, darkTerrainPartition);
+        mapColoursOverlays = new int[worldRadius * 2][worldRadius * 2];
+        if (BlockClientEvents.nightCircleMode != NightCircleMode.OFF)
+            updateNightCircles();
+        
+        // Update map markers
+        mapMarkers.removeIf(MapMarker::tick);
+
+        updateMapUnitsAndBuildings();
+        updateMapViewQuad();
+
+        // as the map area increases, decrease refresh rate to maintain FPS
+        terrainPartition += 1;
+        if (terrainPartition > TERRAIN_PARTITIONS_MAX) {
+            terrainPartition = 1;
+
+            darkTerrainPartition += 1;
+            if (darkTerrainPartition > DARK_TERRAIN_PARTITIONS_MAX) {
+                darkTerrainPartition = 1;
+            }
+        }
+
+        updateMapTexture();
+    }
+}
