@@ -2,14 +2,15 @@ package com.rics.ronrockets.ability;
 
 import com.rics.ronrockets.RonRocketsMod;
 import com.rics.ronrockets.building.AbstractRocketSilo;
-import com.rics.ronrockets.rocket.RocketManager;
-import com.rics.ronrockets.rocket.RocketStrike;
+import com.rics.ronrockets.entity.RocketEntities;
+import com.rics.ronrockets.entity.RocketEntity;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.cursor.CursorClientEvents;
 import com.solegendary.reignofnether.hud.AbilityButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.unit.UnitAction;
+
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Style;
@@ -79,22 +80,30 @@ public class LaunchRocketAbility extends Ability {
 
         ServerLevel serverLevel = (ServerLevel) level;
 
-        long currentTick = serverLevel.getGameTime();
-        double distance = Math.sqrt(buildingUsing.centrePos.distSqr(targetBp));
-        long travelTime = (long)(distance * 2);
-
-        RocketManager.registerStrike(
-                new RocketStrike(
-                        buildingUsing.ownerName,
-                        buildingUsing.centrePos,
-                        targetBp,
-                        currentTick + travelTime
-                )
+        // ✅ Spawn rocket entity
+        RocketEntity rocket = new RocketEntity(
+                RocketEntities.ROCKET.get(),
+                serverLevel
         );
 
-        buildingUsing.setCharges(produceAbility,
-                buildingUsing.getCharges(produceAbility) - 1);
+        rocket.setPos(
+                buildingUsing.centrePos.getX() + 0.5,
+                buildingUsing.centrePos.getY() + 5,
+                buildingUsing.centrePos.getZ() + 0.5
+        );
 
+        rocket.setTarget(targetBp);
+        rocket.setAttacker(buildingUsing.ownerName);
+
+        serverLevel.addFreshEntity(rocket);
+
+        // ✅ Consume charge
+        buildingUsing.setCharges(
+                produceAbility,
+                buildingUsing.getCharges(produceAbility) - 1
+        );
+
+        // ✅ Launch cooldown
         buildingUsing.setCooldown(this, cooldownMax);
     }
 }
