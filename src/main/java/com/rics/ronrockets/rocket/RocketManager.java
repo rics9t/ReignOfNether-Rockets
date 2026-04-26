@@ -46,7 +46,7 @@ public class RocketManager {
         }
     }
 
-    private static void resolveStrike(RocketStrike strike, ServerLevel level) {
+    public static void resolveStrike(RocketStrike strike, ServerLevel level) {
 
         int radius = 8;
 
@@ -117,6 +117,10 @@ public class RocketManager {
 
         // ✅ Spawn cinematic particles
         spawnImpactEffects(level, strike.targetPos);
+    }
+
+    public static void resolveStrikeFromEntity(RocketStrike strike, ServerLevel level) {
+    resolveStrike(strike, level);
     }
 
     private static void spawnImpactEffects(ServerLevel level, net.minecraft.core.BlockPos pos) {
