@@ -55,7 +55,7 @@ public class MonsterRocketSilo extends com.solegendary.reignofnether.building.Bu
                 name,
                 this.icon,
                 hotkey,
-                () -> BuildingClientEvents.getBuildingToPlace() == this,
+                () -> BuildingClientEvents.getBuildingToPlace() == RocketBuildings.MONSTER_SILO,
                 () -> false,
                 () -> true,
                 List.of(
