@@ -29,27 +29,27 @@ public class LaunchRocketAbility extends Ability {
     }
 
     @Override
-    public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
+public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
 
-        return new AbilityButton(
-                "Launch Rocket",
-                new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
-                hotkey,
-                () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
-                () -> placement.getAbilities().stream()
-                        .noneMatch(a -> a instanceof ProduceRocketAbility produce &&
-                                placement.getCharges(produce) > 0),
-                () -> isOffCooldown(placement),
-                () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
-                null,
-                List.of(
-                        FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
-                        FormattedCharSequence.forward("Click target location", Style.EMPTY)
-                ),
-                this,
-                placement
-        );
-    }
+    return new AbilityButton(
+            "Launch Rocket",
+            new ResourceLocation("ronrockets", "textures/icons/launch_rocket.png"),
+            hotkey,
+            () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
+            () -> placement.getAbilities().stream()
+                    .noneMatch(a -> a instanceof ProduceRocketAbility produce &&
+                            placement.getCharges(produce) > 0),
+            () -> isOffCooldown(placement),
+            () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
+            null,
+            List.of(
+                    FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
+                    FormattedCharSequence.forward("Click target location", Style.EMPTY)
+            ),
+            this,
+            placement
+    );
+}
 
     @Override
     public void use(Level level, BuildingPlacement buildingUsing, BlockPos targetBp) {
