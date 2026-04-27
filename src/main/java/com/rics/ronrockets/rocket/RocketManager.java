@@ -1,8 +1,6 @@
 package com.rics.ronrockets.rocket;
 
 import com.rics.ronrockets.building.AbstractRocketSilo;
-import com.rics.ronrockets.building.ShieldArrayBuilding;
-import com.rics.ronrockets.shield.ShieldStateManager;
 import com.solegendary.reignofnether.attackwarnings.AttackWarningClientboundPacket;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
@@ -10,6 +8,8 @@ import com.solegendary.reignofnether.unit.interfaces.Unit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
@@ -27,7 +27,7 @@ public class RocketManager {
     public static void finishRocketProduction(BlockPos pos) {
         int stored = storedRockets.getOrDefault(pos, 0);
         storedRockets.put(pos, Math.min(2, stored + 1));
-        cooldownTicks.put(pos, 3600); // ✅ 3 Minutes Cooldown (180s * 20 ticks)
+        cooldownTicks.put(pos, 3600); 
     }
 
     @SubscribeEvent
@@ -45,19 +45,12 @@ public class RocketManager {
     }
 
     public static void resolveStrikeFromEntity(RocketStrike strike, ServerLevel level) {
-        int radius = 12; // ✅ 12 block radius
+        int radius = 12;
 
-        // Interception
-        for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
-            if (!(building.getBuilding() instanceof ShieldArrayBuilding) || !building.isBuilt) continue;
-            if (building.centrePos.distSqr(strike.targetPos) <= ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) {
-                if (ShieldStateManager.isActive(building)) return;
-            }
-        }
-
-        // ✅ Massive impact particles
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), 2, 0, 0, 0, 0);
-        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), 150, 4, 4, 4, 0.1);
+        // ✅ Ground Impact Visuals
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), 3, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), 250, 5, 5, 5, 0.15);
+        level.playSound(null, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 5.0f, 1.0f);
 
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
@@ -66,7 +59,7 @@ public class RocketManager {
             }
         }
 
-        // ✅ Linear Falloff Damage to Buildings
+        // Damage buildings
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
 
@@ -74,7 +67,7 @@ public class RocketManager {
             if (distSqr > radius * radius) continue;
 
             double falloff = Math.max(0, 1.0 - (Math.sqrt(distSqr) / radius));
-            float maxPercent = building.isCapitol ? 0.30f : 0.60f; // Max 60% building destroyed at epicenter
+            float maxPercent = building.isCapitol ? 0.30f : 0.60f;
 
             int blocksToDestroy = (int) (building.getBlocksTotal() * maxPercent * falloff);
 
@@ -84,7 +77,7 @@ public class RocketManager {
             }
         }
 
-        // ✅ Linear Falloff Damage to Units
+        // Damage units
         AABB area = new AABB(strike.targetPos).inflate(radius);
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area);
 
@@ -93,7 +86,7 @@ public class RocketManager {
                 double dist = Math.sqrt(entity.distanceToSqr(strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ()));
                 if (dist <= radius) {
                     double falloff = 1.0 - (dist / radius);
-                    float damage = (float) (200 * falloff); // Max 200 damage at epicenter
+                    float damage = (float) (200 * falloff);
                     if (damage > 0) entity.hurt(level.damageSources().generic(), damage);
                 }
             }
