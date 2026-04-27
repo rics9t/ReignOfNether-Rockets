@@ -55,7 +55,7 @@ public class PiglinRocketSilo extends com.solegendary.reignofnether.building.Bui
                 name,
                 this.icon,
                 hotkey,
-                () -> BuildingClientEvents.getBuildingToPlace() == this,
+                () -> BuildingClientEvents.getBuildingToPlace() == RocketBuildings.PIGLIN_SILO,
                 () -> false,
                 () -> true,
                 List.of(
