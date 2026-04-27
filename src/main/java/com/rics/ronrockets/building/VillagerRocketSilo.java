@@ -34,7 +34,8 @@ public class VillagerRocketSilo extends AbstractRocketSilo {
                 "textures/block/iron_block.png"
         );
 
-        this.startingBlockTypes.add(Blocks.IRON_BLOCK);
+        this.startingBlockTypes.add(Blocks.OAK_PLANKS);
+        this.startingBlockTypes.add(Blocks.COBBLESTONE);
     }
 
     @Override
