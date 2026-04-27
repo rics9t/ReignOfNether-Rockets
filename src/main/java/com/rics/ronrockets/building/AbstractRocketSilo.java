@@ -9,7 +9,7 @@ public abstract class AbstractRocketSilo extends Building {
 
     public AbstractRocketSilo(String structureName) {
         super(structureName,
-                ResourceCost.Building(1000, 800, 600, 0)
+                ResourceCost.Building(1000, 800, 600, 0),
                 false
         );
 
