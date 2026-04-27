@@ -12,39 +12,46 @@ import net.minecraft.resources.ResourceLocation;
 public class RocketBuildings {
 
     public static VillagerRocketSilo VILLAGER_SILO;
+    public static MonsterRocketSilo MONSTER_SILO;
+    public static PiglinRocketSilo PIGLIN_SILO;
     public static ShieldArrayBuilding SHIELD_ARRAY;
 
     public static void register() {
 
         VILLAGER_SILO = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
-                ResourceLocation.fromNamespaceAndPath(
-                        RonRocketsMod.MODID,
-                        "villager_rocket_silo"
-                ),
+                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "villager_rocket_silo"),
                 new VillagerRocketSilo()
+        );
+
+        MONSTER_SILO = Registry.register(
+                ReignOfNetherRegistries.BUILDING,
+                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "monster_rocket_silo"),
+                new MonsterRocketSilo()
+        );
+
+        PIGLIN_SILO = Registry.register(
+                ReignOfNetherRegistries.BUILDING,
+                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "piglin_rocket_silo"),
+                new PiglinRocketSilo()
         );
 
         SHIELD_ARRAY = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
-                ResourceLocation.fromNamespaceAndPath(
-                        RonRocketsMod.MODID,
-                        "shield_array"
-                ),
+                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "shield_array"),
                 new ShieldArrayBuilding()
         );
 
-        // ✅ Add to faction menus
-        FactionRegistries.register(
-                Faction.VILLAGERS,
-                VILLAGER_SILO,
-                Keybindings.keyZ
-        );
+        // ✅ Villagers
+        FactionRegistries.register(Faction.VILLAGERS, VILLAGER_SILO, Keybindings.keyZ);
+        FactionRegistries.register(Faction.VILLAGERS, SHIELD_ARRAY, Keybindings.keyX);
 
-        FactionRegistries.register(
-                Faction.VILLAGERS,
-                SHIELD_ARRAY,
-                Keybindings.keyX
-        );
+        // ✅ Monsters
+        FactionRegistries.register(Faction.MONSTERS, MONSTER_SILO, Keybindings.keyZ);
+        FactionRegistries.register(Faction.MONSTERS, SHIELD_ARRAY, Keybindings.keyX);
+
+        // ✅ Piglins
+        FactionRegistries.register(Faction.PIGLINS, PIGLIN_SILO, Keybindings.keyZ);
+        FactionRegistries.register(Faction.PIGLINS, SHIELD_ARRAY, Keybindings.keyX);
     }
 }
