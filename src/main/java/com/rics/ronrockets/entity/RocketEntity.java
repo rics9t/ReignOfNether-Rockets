@@ -2,6 +2,7 @@ package com.rics.ronrockets.entity;
 
 import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.rocket.RocketStrike;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -15,7 +16,7 @@ import net.minecraftforge.network.NetworkHooks;
 
 public class RocketEntity extends Entity {
 
-    private static final double BLOCKS_PER_TICK = 0.55; // smaller = slower
+    private static final double BLOCKS_PER_TICK = 0.55;
     private static final double MAX_ARC_HEIGHT = 55.0;
 
     private BlockPos target;
@@ -25,15 +26,20 @@ public class RocketEntity extends Entity {
     private int flightTicks = 0;
     private int maxFlightTicks = 0;
 
-    // Bezier control point
+    // Quadratic Bezier control point
     private double ctrlX, ctrlY, ctrlZ;
 
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
         super(type, level);
     }
 
-    public void setTarget(BlockPos target) { this.target = target; }
-    public void setAttacker(String attacker) { this.attacker = attacker; }
+    public void setTarget(BlockPos target) {
+        this.target = target;
+    }
+
+    public void setAttacker(String attacker) {
+        this.attacker = attacker;
+    }
 
     @Override
     protected void defineSynchedData() {
@@ -68,7 +74,7 @@ public class RocketEntity extends Entity {
 
             maxFlightTicks = Math.max(40, (int) Math.ceil(dist / BLOCKS_PER_TICK));
 
-            // Banana shape: control point closer to start (t ~ 0.30) and higher
+            // Control point near the start to make a "banana" trajectory
             double tCtrl = 0.30;
             ctrlX = startX + dx * tCtrl;
             ctrlZ = startZ + dz * tCtrl;
@@ -80,7 +86,8 @@ public class RocketEntity extends Entity {
         flightTicks++;
         if (flightTicks >= maxFlightTicks) {
             RocketManager.resolveStrikeFromEntity(
-                    new RocketStrike(attacker,
+                    new RocketStrike(
+                            attacker == null ? "" : attacker,
                             BlockPos.containing(startX, startY, startZ),
                             target,
                             serverLevel.getGameTime()
@@ -97,8 +104,6 @@ public class RocketEntity extends Entity {
         double endY = target.getY() + 1.0;
         double endZ = target.getZ() + 0.5;
 
-        // Quadratic Bezier:
-        // P(t) = (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
         double oneMinusT = 1.0 - t;
 
         double nextX = oneMinusT * oneMinusT * startX + 2 * oneMinusT * t * ctrlX + t * t * endX;
@@ -137,7 +142,9 @@ public class RocketEntity extends Entity {
             tag.putInt("TargetY", target.getY());
             tag.putInt("TargetZ", target.getZ());
         }
-        if (attacker != null) tag.putString("Attacker", attacker);
+        if (attacker != null) {
+            tag.putString("Attacker", attacker);
+        }
 
         tag.putDouble("StartX", startX);
         tag.putDouble("StartY", startY);
