@@ -55,10 +55,25 @@ public class RocketEntity extends Entity {
 
         // Shield interception
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
-            building.getAbilities().forEach(ability -> {
-                if (ability instanceof ShieldInterceptAbility shield) {
-                    if (shield.isShieldActive(building)
-                            && building.centrePos.distToCenterSqr(getX(), getY(), getZ()) <= 64 * 64) {
+    building.getAbilities().forEach(ability -> {
+        if (ability instanceof ShieldInterceptAbility shield) {
+
+            if (shield.isShieldActive(building)) {
+
+                // ✅ Continuous shield particles while active
+                serverLevel.sendParticles(
+                        ParticleTypes.ENCHANT,
+                        building.centrePos.getX() + 0.5,
+                        building.centrePos.getY() + 3,
+                        building.centrePos.getZ() + 0.5,
+                        5,
+                        1.5,1.5,1.5,
+                        0.05
+                );
+
+                if (building.centrePos.distToCenterSqr(getX(), getY(), getZ()) <= 64 * 64) {
+
+                    if (ShieldEnergyManager.consumeEnergy(building, 50)) {
 
                         serverLevel.sendParticles(
                                 ParticleTypes.EXPLOSION_EMITTER,
@@ -66,20 +81,13 @@ public class RocketEntity extends Entity {
                                 3, 0, 0, 0, 0
                         );
 
-                        serverLevel.playSound(
-                                null,
-                                getX(), getY(), getZ(),
-                                SoundEvents.GENERIC_EXPLODE,
-                                SoundSource.MASTER,
-                                2.0f,
-                                1.0f
-                        );
-
                         discard();
                     }
                 }
-            });
+            }
         }
+    });
+}
 
         if (target == null) return;
 
