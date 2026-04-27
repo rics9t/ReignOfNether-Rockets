@@ -37,7 +37,7 @@ public class ShieldArrayBuilding extends ProductionBuilding {
         this.name = "Shield Array";
         this.portraitBlock = Blocks.BEACON;
         this.icon = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/beacon.png");
-        this.startingBlockTypes.add(Blocks.BEACON);
+        this.startingBlockTypes.add(Blocks.LODESTONE);
 
         // ✅ Bound the ability to Key Q so the button actually appears!
         this.abilities.add(new ShieldInterceptAbility(), Keybindings.keyQ);
