@@ -10,8 +10,8 @@
   "tooltip.ronrockets.shield_radius": "Радиус перехвата: 64",
   "tooltip.ronrockets.shield_cooldown": "Перезарядка: 30с",
 
-  "building.ronrockets.rocket_silo": "Ракетная шахта",
-  "building.ronrockets.shield_array": "Щитовой массив",
+  "buildings.villagers.ronrockets.villager_rocket_silo": "Ракетная шахта",
+  "buildings.villagers.ronrockets.shield_array": "Щитовой массив",
 
   "hud.ronrockets.rocket_incoming": "Входящая ракета!",
   "hud.ronrockets.rocket_intercepted": "Ракета перехвачена!"
