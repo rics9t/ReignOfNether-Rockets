@@ -1,12 +1,21 @@
 {
-  "abilities.ronrockets.launch_rocket": "Запустить ракету",
-  "abilities.ronrockets.shield_intercept": "Перехват ракеты",
+  "abilities.ronrockets.launch_rocket": "Zapustit' raketu",
+  "abilities.ronrockets.shield_intercept": "Perekhvat rakety",
+  "abilities.ronrockets.produce_rocket": "Proizvodstvo rakety",
 
-  "buildings.villagers.reignofnether.villager_rocket_silo": "Ракетная шахта крестьян",
-  "buildings.monsters.reignofnether.monster_rocket_silo": "Ракетная шахта монстров",
-  "buildings.piglins.reignofnether.piglin_rocket_silo": "Ракетная шахта пиглинов",
-  "buildings.none.reignofnether.shield_array": "Щитовой массив",
+  "buildings.villagers.reignofnether.villager_rocket_silo": "Raketnaya shakhta krest'yan",
+  "buildings.monsters.reignofnether.monster_rocket_silo": "Raketnaya shakhta monstrov",
+  "buildings.piglins.reignofnether.piglin_rocket_silo": "Raketnaya shakhta piglinov",
+  "buildings.none.reignofnether.shield_array": "Shchitovoy massiv",
 
-  "hud.ronrockets.rocket_incoming": "Входящая ракета!",
-  "hud.ronrockets.rocket_intercepted": "Ракета перехвачена!"
+  "tooltip.ronrockets.launch_damage": "Nanosit tyazhelyy uron zdaniyam v oblasti",
+  "tooltip.ronrockets.unit_damage": "Nanosit do 200 urona yunitam v radiuse",
+  "tooltip.ronrockets.silo_desc": "Proizvodit i zapuskayet strategicheskiye rakety",
+  "tooltip.ronrockets.shield_energy": "Energiya: %d",
+  "tooltip.ronrockets.shield_duration": "Dlitel'nost': 10s",
+  "tooltip.ronrockets.shield_cooldown": "Perezaryadka: 30s",
+  "tooltip.ronrockets.shield_desc": "Perekhvatyvayet vkhodyashchiye rakety v radiuse",
+
+  "hud.ronrockets.rocket_incoming": "Vkhodyashchaya raketa!",
+  "hud.ronrockets.rocket_intercepted": "Raketa perekhvachena!"
 }
