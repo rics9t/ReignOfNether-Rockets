@@ -16,22 +16,13 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
 
     public RocketRenderer(EntityRendererProvider.Context context) {
         super(context);
-        model = new RocketModel(
-                context.bakeLayer(RocketLayers.ROCKET_LAYER)
-        );
+        model = new RocketModel(context.bakeLayer(RocketLayers.ROCKET_LAYER));
     }
 
     @Override
-    public void render(RocketEntity entity,
-                       float entityYaw,
-                       float partialTicks,
-                       PoseStack poseStack,
-                       MultiBufferSource buffer,
-                       int packedLight) {
-
+    public void render(RocketEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         poseStack.pushPose();
 
-        // ✅ Rotate toward movement direction
         double vx = entity.getDeltaMovement().x;
         double vz = entity.getDeltaMovement().z;
         double vy = entity.getDeltaMovement().y;
@@ -42,27 +33,17 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
         poseStack.mulPose(Axis.YP.rotation(-yaw));
         poseStack.mulPose(Axis.ZP.rotation(pitch));
 
-        var vertex = buffer.getBuffer(
-                net.minecraft.client.renderer.RenderType.entitySolid(
-                        getTextureLocation(entity)
-                )
-        );
+        var vertex = buffer.getBuffer(net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
 
-        model.renderToBuffer(
-                poseStack,
-                vertex,
-                packedLight,
-                OverlayTexture.NO_OVERLAY,
-                1f, 1f, 1f, 1f
-        );
-
+        model.renderToBuffer(poseStack, vertex, packedLight, OverlayTexture.NO_OVERLAY, 1f, 1f, 1f, 1f);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
     }
 
+    // ✅ Uses your custom Rocket texture!
     @Override
     public ResourceLocation getTextureLocation(RocketEntity entity) {
-        return new ResourceLocation("minecraft", "textures/block/iron_block.png");
+        return new ResourceLocation("ronrockets", "textures/entity/rocket.png");
     }
 }
