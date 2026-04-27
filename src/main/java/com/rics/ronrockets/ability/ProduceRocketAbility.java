@@ -7,6 +7,7 @@ public class ProduceRocketAbility extends Ability {
 
     public static final int MAX_ROCKETS = 2;
 
+    // Single shared instance used as the key for BuildingPlacement charges
     public static final ProduceRocketAbility INSTANCE = new ProduceRocketAbility();
 
     private ProduceRocketAbility() {

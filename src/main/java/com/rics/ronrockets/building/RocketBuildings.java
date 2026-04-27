@@ -19,6 +19,7 @@ public class RocketBuildings {
 
         VILLAGER_SILO = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
+                // ✅ Changed to "reignofnether"
                 ResourceLocation.fromNamespaceAndPath("reignofnether", "villager_rocket_silo"),
                 new VillagerRocketSilo()
         );
@@ -41,15 +42,15 @@ public class RocketBuildings {
                 new ShieldArrayBuilding()
         );
 
-        // Villagers
+        // ✅ Villagers
         FactionRegistries.register(Faction.VILLAGERS, VILLAGER_SILO, Keybindings.keyZ);
         FactionRegistries.register(Faction.VILLAGERS, SHIELD_ARRAY, Keybindings.keyX);
 
-        // Monsters
+        // ✅ Monsters
         FactionRegistries.register(Faction.MONSTERS, MONSTER_SILO, Keybindings.keyZ);
         FactionRegistries.register(Faction.MONSTERS, SHIELD_ARRAY, Keybindings.keyX);
 
-        // Piglins
+        // ✅ Piglins
         FactionRegistries.register(Faction.PIGLINS, PIGLIN_SILO, Keybindings.keyZ);
         FactionRegistries.register(Faction.PIGLINS, SHIELD_ARRAY, Keybindings.keyX);
     }

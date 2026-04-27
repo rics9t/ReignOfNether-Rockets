@@ -26,6 +26,7 @@ public class RocketEntity extends Entity {
     private int flightTicks = 0;
     private int maxFlightTicks = 0;
 
+    // Quadratic Bezier control point
     private double ctrlX, ctrlY, ctrlZ;
 
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
@@ -38,10 +39,6 @@ public class RocketEntity extends Entity {
 
     public void setAttacker(String attacker) {
         this.attacker = attacker;
-    }
-
-    public String getAttacker() {
-        return this.attacker;
     }
 
     @Override
@@ -77,6 +74,7 @@ public class RocketEntity extends Entity {
 
             maxFlightTicks = Math.max(40, (int) Math.ceil(dist / BLOCKS_PER_TICK));
 
+            // Control point near the start to make a "banana" trajectory
             double tCtrl = 0.30;
             ctrlX = startX + dx * tCtrl;
             ctrlZ = startZ + dz * tCtrl;
@@ -124,12 +122,15 @@ public class RocketEntity extends Entity {
         if (tag.contains("Attacker")) {
             attacker = tag.getString("Attacker");
         }
+
         startX = tag.getDouble("StartX");
         startY = tag.getDouble("StartY");
         startZ = tag.getDouble("StartZ");
+
         ctrlX = tag.getDouble("CtrlX");
         ctrlY = tag.getDouble("CtrlY");
         ctrlZ = tag.getDouble("CtrlZ");
+
         flightTicks = tag.getInt("FlightTicks");
         maxFlightTicks = tag.getInt("MaxFlightTicks");
     }
@@ -144,12 +145,15 @@ public class RocketEntity extends Entity {
         if (attacker != null) {
             tag.putString("Attacker", attacker);
         }
+
         tag.putDouble("StartX", startX);
         tag.putDouble("StartY", startY);
         tag.putDouble("StartZ", startZ);
+
         tag.putDouble("CtrlX", ctrlX);
         tag.putDouble("CtrlY", ctrlY);
         tag.putDouble("CtrlZ", ctrlZ);
+
         tag.putInt("FlightTicks", flightTicks);
         tag.putInt("MaxFlightTicks", maxFlightTicks);
     }

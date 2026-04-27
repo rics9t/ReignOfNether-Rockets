@@ -8,7 +8,6 @@ import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.unit.UnitAction;
 
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Style;
@@ -33,7 +32,7 @@ public class ShieldInterceptAbility extends Ability {
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
 
         return new AbilityButton(
-                I18n.get("abilities.ronrockets.shield_intercept"),
+                "Shield Intercept",
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/shield_intercept.png"),
                 hotkey,
                 () -> isShieldActive(placement),
@@ -42,23 +41,10 @@ public class ShieldInterceptAbility extends Ability {
                 () -> use(placement.getLevel(), placement, placement.centrePos),
                 null,
                 List.of(
-                        FormattedCharSequence.forward(
-                                I18n.get("abilities.ronrockets.shield_intercept"),
-                                Style.EMPTY.withBold(true)
-                        ),
-                        FormattedCharSequence.forward(
-                                I18n.get("tooltip.ronrockets.shield_energy",
-                                        ShieldEnergyManager.getEnergy(placement)),
-                                Style.EMPTY
-                        ),
-                        FormattedCharSequence.forward(
-                                I18n.get("tooltip.ronrockets.shield_duration"),
-                                Style.EMPTY
-                        ),
-                        FormattedCharSequence.forward(
-                                I18n.get("tooltip.ronrockets.shield_cooldown"),
-                                Style.EMPTY
-                        )
+                        FormattedCharSequence.forward("Activate Shield", Style.EMPTY.withBold(true)),
+                        FormattedCharSequence.forward("Energy: " + ShieldEnergyManager.getEnergy(placement), Style.EMPTY),
+                        FormattedCharSequence.forward("Duration: 10s", Style.EMPTY),
+                        FormattedCharSequence.forward("Cooldown: 30s", Style.EMPTY)
                 ),
                 this,
                 placement
@@ -75,23 +61,19 @@ public class ShieldInterceptAbility extends Ability {
 
         this.setToMaxCooldown(buildingUsing);
 
-        // Activation burst
+        // ✅ Activation burst
         ((ServerLevel) level).sendParticles(
                 ParticleTypes.ENCHANT,
                 buildingUsing.centrePos.getX() + 0.5,
                 buildingUsing.centrePos.getY() + 3,
                 buildingUsing.centrePos.getZ() + 0.5,
                 120,
-                2, 2, 2,
+                2,2,2,
                 0.1
         );
     }
 
     public boolean isShieldActive(BuildingPlacement placement) {
         return getCooldown(placement) > (cooldownMax - ACTIVE_DURATION);
-    }
-
-    public int getActiveDuration() {
-        return ACTIVE_DURATION;
     }
 }

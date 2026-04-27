@@ -9,12 +9,10 @@ import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
 
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class RocketProd extends ProductionItem {
@@ -25,8 +23,10 @@ public class RocketProd extends ProductionItem {
         super(COST);
 
         this.onComplete = (level, placement) -> {
+            // Run on BOTH sides so UI updates immediately.
+            // Server remains authoritative.
             int current = placement.getCharges(ProduceRocketAbility.INSTANCE);
-            int max = ProduceRocketAbility.MAX_ROCKETS;
+            int max = ProduceRocketAbility.INSTANCE.maxCharges;
             if (current < max) {
                 placement.setCharges(ProduceRocketAbility.INSTANCE, current + 1);
             }
@@ -40,30 +40,18 @@ public class RocketProd extends ProductionItem {
 
     @Override
     public StartProductionButton getStartButton(ProductionPlacement prodBuilding, Keybinding hotkey) {
-        List<FormattedCharSequence> tooltips = new ArrayList<>();
-        tooltips.add(FormattedCharSequence.forward(
-                I18n.get("abilities.ronrockets.produce_rocket"),
-                Style.EMPTY.withBold(true)
-        ));
-
-        FormattedCharSequence costText = ResourceCosts.getFormattedCost(COST);
-        if (costText != null) {
-            tooltips.add(costText);
-        }
-
-        FormattedCharSequence popTimeText = ResourceCosts.getFormattedPopAndTime(COST);
-        if (popTimeText != null) {
-            tooltips.add(popTimeText);
-        }
 
         return new StartProductionButton(
-                I18n.get("abilities.ronrockets.produce_rocket"),
+                "Rocket",
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
                 hotkey,
                 () -> false,
-                () -> prodBuilding.getCharges(ProduceRocketAbility.INSTANCE)
-                        >= ProduceRocketAbility.MAX_ROCKETS,
-                tooltips,
+                () -> prodBuilding.getCharges(ProduceRocketAbility.INSTANCE) >= ProduceRocketAbility.INSTANCE.maxCharges,
+                List.of(
+                        FormattedCharSequence.forward("Produce Rocket", Style.EMPTY.withBold(true)),
+                        ResourceCosts.getFormattedCost(COST),
+                        ResourceCosts.getFormattedPopAndTime(COST)
+                ),
                 this
         );
     }
@@ -71,7 +59,7 @@ public class RocketProd extends ProductionItem {
     @Override
     public StopProductionButton getCancelButton(ProductionPlacement prodBuilding, boolean first) {
         return new StopProductionButton(
-                I18n.get("abilities.ronrockets.produce_rocket"),
+                "Rocket",
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
                 prodBuilding,
                 this,
