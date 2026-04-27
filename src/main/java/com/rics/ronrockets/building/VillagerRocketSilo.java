@@ -37,7 +37,6 @@ public class VillagerRocketSilo extends Building {
                 "textures/block/iron_block.png"
         );
 
-        // ✅ REQUIRED for preview to work
         this.startingBlockTypes.add(Blocks.IRON_BLOCK);
     }
 
@@ -46,7 +45,6 @@ public class VillagerRocketSilo extends Building {
         return Faction.VILLAGERS;
     }
 
-    // ✅ REQUIRED so structure loads correctly
     @Override
     public ArrayList<BuildingBlock> getRelativeBlockData(LevelAccessor level) {
         return BuildingBlockData.getBuildingBlocksFromNbt(
@@ -55,7 +53,6 @@ public class VillagerRocketSilo extends Building {
         );
     }
 
-    // ✅ REQUIRED so ghost preview works
     @Override
     public BuildingPlacement createBuildingPlacement(
             Level level,
@@ -86,9 +83,7 @@ public class VillagerRocketSilo extends Building {
                 ReignOfNetherRegistries.BUILDING.getKey(this);
 
         String name = I18n.get(
-                "buildings." +
-                        getFaction().name().toLowerCase() +
-                        "." +
+                "buildings.villagers." +
                         key.getNamespace() +
                         "." +
                         key.getPath()
