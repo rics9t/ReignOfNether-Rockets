@@ -3,11 +3,12 @@ package com.rics.ronrockets.entity;
 import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.rocket.RocketStrike;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkHooks;
 
@@ -15,6 +16,10 @@ public class RocketEntity extends Entity {
 
     private BlockPos target;
     private String attacker;
+
+    private double startX, startY, startZ;
+    private int flightTicks = 0;
+    private int maxFlightTicks = 0;
 
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
         super(type, level);
@@ -32,44 +37,62 @@ public class RocketEntity extends Entity {
     protected void defineSynchedData() {}
 
     @Override
-    protected void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {}
-
-    @Override
-    protected void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {}
-
-    @Override
     public void tick() {
         super.tick();
 
-        if (level().isClientSide) return;
+        // ✅ Physics Math Init
+        if (target != null && maxFlightTicks == 0) {
+            startX = getX(); startY = getY(); startZ = getZ();
+            double dist = Math.sqrt(target.distToCenterSqr(startX, startY, startZ));
+            maxFlightTicks = Math.max(20, (int) (dist / 1.5)); // Constant Speed (1.5 blocks/tick)
+        }
+
+        // ✅ Smoke and Fire Particles on Client
+        if (level().isClientSide) {
+            level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(), 0, -0.1, 0);
+            level().addParticle(ParticleTypes.FLAME, getX(), getY(), getZ(), 0, -0.1, 0);
+            return;
+        }
+
         if (target == null) return;
 
-        double dx = target.getX() + 0.5 - getX();
-        double dz = target.getZ() + 0.5 - getZ();
-        double dy = target.getY() + 1 - getY();
-
-        double horizontalDist = Math.sqrt(dx * dx + dz * dz);
-
-        // ✅ Banana arc
-        double arcHeight = 0.03 * horizontalDist;
-
-        setDeltaMovement(
-                dx * 0.02,
-                dy * 0.02 + arcHeight,
-                dz * 0.02
-        );
-
-        move(MoverType.SELF, getDeltaMovement());
-
-        if (horizontalDist < 2.0) {
-
-            RocketManager.resolveStrikeFromEntity(
-                    new RocketStrike(attacker, blockPosition(), target, 0),
-                    (net.minecraft.server.level.ServerLevel) level()
-            );
-
+        flightTicks++;
+        if (flightTicks >= maxFlightTicks) {
+            RocketManager.resolveStrikeFromEntity(new RocketStrike(attacker, new BlockPos((int)startX, (int)startY, (int)startZ), target, 0), (ServerLevel) level());
             discard();
+            return;
         }
+
+        // ✅ Constant-Speed Parabolic Arc Math
+        double p = (double) flightTicks / maxFlightTicks;
+        double nextX = startX + (target.getX() + 0.5 - startX) * p;
+        double nextZ = startZ + (target.getZ() + 0.5 - startZ) * p;
+        
+        double horizontalDist = Math.sqrt(target.distToCenterSqr(startX, startY, startZ));
+        double arc = Math.min(horizontalDist * 0.5, 60.0); // Flies up to 60 blocks high
+        double nextY = startY + (target.getY() + 1 - startY) * p + arc * 4 * p * (1 - p);
+
+        setDeltaMovement(nextX - getX(), nextY - getY(), nextZ - getZ());
+        setPos(nextX, nextY, nextZ);
+    }
+
+    // Ensures it doesn't crash on world reload mid-air
+    @Override
+    protected void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        if (tag.contains("TargetX")) target = new BlockPos(tag.getInt("TargetX"), tag.getInt("TargetY"), tag.getInt("TargetZ"));
+        attacker = tag.getString("Attacker");
+        startX = tag.getDouble("StartX"); startY = tag.getDouble("StartY"); startZ = tag.getDouble("StartZ");
+        flightTicks = tag.getInt("FlightTicks"); maxFlightTicks = tag.getInt("MaxFlightTicks");
+    }
+
+    @Override
+    protected void addAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
+        if (target != null) {
+            tag.putInt("TargetX", target.getX()); tag.putInt("TargetY", target.getY()); tag.putInt("TargetZ", target.getZ());
+        }
+        if (attacker != null) tag.putString("Attacker", attacker);
+        tag.putDouble("StartX", startX); tag.putDouble("StartY", startY); tag.putDouble("StartZ", startZ);
+        tag.putInt("FlightTicks", flightTicks); tag.putInt("MaxFlightTicks", maxFlightTicks);
     }
 
     @Override
