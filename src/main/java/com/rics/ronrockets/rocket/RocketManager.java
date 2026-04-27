@@ -8,6 +8,7 @@ import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
 import com.solegendary.reignofnether.unit.interfaces.Unit;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
@@ -20,10 +21,14 @@ import java.util.Map;
 
 public class RocketManager {
 
-    // ✅ Custom Trackers for Rocket Production (Bypasses RoN engine limitations)
     public static Map<BlockPos, Integer> storedRockets = new HashMap<>();
-    public static Map<BlockPos, Integer> productionTicks = new HashMap<>();
     public static Map<BlockPos, Integer> cooldownTicks = new HashMap<>();
+
+    public static void finishRocketProduction(BlockPos pos) {
+        int stored = storedRockets.getOrDefault(pos, 0);
+        storedRockets.put(pos, Math.min(2, stored + 1));
+        cooldownTicks.put(pos, 3600); // ✅ 3 Minutes Cooldown (180s * 20 ticks)
+    }
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
@@ -34,41 +39,26 @@ public class RocketManager {
             if (!placement.isBuilt) continue;
 
             BlockPos pos = placement.centrePos;
-            int stored = storedRockets.getOrDefault(pos, 0);
-            int prod = productionTicks.getOrDefault(pos, 0);
             int cool = cooldownTicks.getOrDefault(pos, 0);
-
-            // Production Timer
-            if (prod > 0) {
-                prod--;
-                if (prod <= 0) {
-                    stored = Math.min(2, stored + 1);
-                    cool = 3600; // ✅ Starts 3 Minute Cooldown
-                }
-                productionTicks.put(pos, prod);
-                storedRockets.put(pos, stored);
-            }
-
-            // Cooldown Timer
-            if (cool > 0) {
-                cool--;
-                cooldownTicks.put(pos, cool);
-            }
+            if (cool > 0) cooldownTicks.put(pos, cool - 1);
         }
     }
 
     public static void resolveStrikeFromEntity(RocketStrike strike, ServerLevel level) {
-        int radius = 12; // ✅ 12 Block Radius AOE
+        int radius = 12; // ✅ 12 block radius
 
+        // Interception
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
-            if (!(building.getBuilding() instanceof ShieldArrayBuilding)) continue;
-            if (!building.isBuilt) continue;
+            if (!(building.getBuilding() instanceof ShieldArrayBuilding) || !building.isBuilt) continue;
             if (building.centrePos.distSqr(strike.targetPos) <= ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) {
-                if (ShieldStateManager.isActive(building)) return; // Intercepted
+                if (ShieldStateManager.isActive(building)) return;
             }
         }
 
-        // Send Warnings
+        // ✅ Massive impact particles
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), 2, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ(), 150, 4, 4, 4, 0.1);
+
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
             if (building.centrePos.distSqr(strike.targetPos) <= radius * radius) {
@@ -76,35 +66,33 @@ public class RocketManager {
             }
         }
 
-        // ✅ Damage buildings (Linear Falloff)
+        // ✅ Linear Falloff Damage to Buildings
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
 
             double distSqr = building.centrePos.distSqr(strike.targetPos);
             if (distSqr > radius * radius) continue;
 
-            double falloff = 1.0 - (Math.sqrt(distSqr) / radius);
-            float maxPercent = building.isCapitol ? 0.30f : 0.60f;
+            double falloff = Math.max(0, 1.0 - (Math.sqrt(distSqr) / radius));
+            float maxPercent = building.isCapitol ? 0.30f : 0.60f; // Max 60% building destroyed at epicenter
 
             int blocksToDestroy = (int) (building.getBlocksTotal() * maxPercent * falloff);
 
             if (blocksToDestroy > 0) {
                 building.destroyRandomBlocks(blocksToDestroy);
-                if (building.shouldBeDestroyed()) {
-                    BuildingServerEvents.cancelBuilding(building, building.ownerName);
-                }
+                if (building.shouldBeDestroyed()) BuildingServerEvents.cancelBuilding(building, building.ownerName);
             }
         }
 
-        // ✅ Damage units (Linear Falloff)
+        // ✅ Linear Falloff Damage to Units
         AABB area = new AABB(strike.targetPos).inflate(radius);
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area);
 
         for (LivingEntity entity : entities) {
             if (entity instanceof Unit) {
-                double dist = entity.distanceToSqr(strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ());
-                if (dist <= radius * radius) {
-                    double falloff = 1.0 - (Math.sqrt(dist) / radius);
+                double dist = Math.sqrt(entity.distanceToSqr(strike.targetPos.getX(), strike.targetPos.getY(), strike.targetPos.getZ()));
+                if (dist <= radius) {
+                    double falloff = 1.0 - (dist / radius);
                     float damage = (float) (200 * falloff); // Max 200 damage at epicenter
                     if (damage > 0) entity.hurt(level.damageSources().generic(), damage);
                 }
