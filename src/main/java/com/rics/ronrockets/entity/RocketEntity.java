@@ -21,17 +21,10 @@ public class RocketEntity extends Entity {
     private int flightTicks = 0;
     private int maxFlightTicks = 0;
 
-    public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
-        super(type, level);
-    }
+    public RocketEntity(EntityType<? extends RocketEntity> type, Level level) { super(type, level); }
 
-    public void setTarget(BlockPos target) {
-        this.target = target;
-    }
-
-    public void setAttacker(String attacker) {
-        this.attacker = attacker;
-    }
+    public void setTarget(BlockPos target) { this.target = target; }
+    public void setAttacker(String attacker) { this.attacker = attacker; }
 
     @Override
     protected void defineSynchedData() {}
@@ -40,18 +33,19 @@ public class RocketEntity extends Entity {
     public void tick() {
         super.tick();
 
-        // ✅ Physics Math Init
+        // ✅ Client-side visual smoke and flame trail
+        if (level().isClientSide) {
+            for(int i = 0; i < 3; i++) {
+                level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY() - 0.5, getZ(), 0, -0.1, 0);
+                level().addParticle(ParticleTypes.FLAME, getX(), getY() - 0.5, getZ(), 0, -0.1, 0);
+            }
+            return;
+        }
+
         if (target != null && maxFlightTicks == 0) {
             startX = getX(); startY = getY(); startZ = getZ();
             double dist = Math.sqrt(target.distToCenterSqr(startX, startY, startZ));
-            maxFlightTicks = Math.max(20, (int) (dist / 1.5)); // Constant Speed (1.5 blocks/tick)
-        }
-
-        // ✅ Smoke and Fire Particles on Client
-        if (level().isClientSide) {
-            level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(), 0, -0.1, 0);
-            level().addParticle(ParticleTypes.FLAME, getX(), getY(), getZ(), 0, -0.1, 0);
-            return;
+            maxFlightTicks = Math.max(20, (int) (dist / 1.5)); // ✅ 100% Constant Horizontal Speed
         }
 
         if (target == null) return;
@@ -63,20 +57,19 @@ public class RocketEntity extends Entity {
             return;
         }
 
-        // ✅ Constant-Speed Parabolic Arc Math
         double p = (double) flightTicks / maxFlightTicks;
         double nextX = startX + (target.getX() + 0.5 - startX) * p;
         double nextZ = startZ + (target.getZ() + 0.5 - startZ) * p;
-        
+
         double horizontalDist = Math.sqrt(target.distToCenterSqr(startX, startY, startZ));
-        double arc = Math.min(horizontalDist * 0.5, 60.0); // Flies up to 60 blocks high
+        double arc = Math.min(horizontalDist * 0.4, 40.0); // ✅ Flies up to a max 40 blocks high (so it stays visible)
         double nextY = startY + (target.getY() + 1 - startY) * p + arc * 4 * p * (1 - p);
 
+        // ✅ Sets delta movement first for rendering rotation, then overrides position directly to prevent drag slowdown
         setDeltaMovement(nextX - getX(), nextY - getY(), nextZ - getZ());
         setPos(nextX, nextY, nextZ);
     }
 
-    // Ensures it doesn't crash on world reload mid-air
     @Override
     protected void readAdditionalSaveData(net.minecraft.nbt.CompoundTag tag) {
         if (tag.contains("TargetX")) target = new BlockPos(tag.getInt("TargetX"), tag.getInt("TargetY"), tag.getInt("TargetZ"));
@@ -96,7 +89,5 @@ public class RocketEntity extends Entity {
     }
 
     @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
-    }
+    public Packet<ClientGamePacketListener> getAddEntityPacket() { return NetworkHooks.getEntitySpawningPacket(this); }
 }
