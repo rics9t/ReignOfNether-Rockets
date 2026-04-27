@@ -7,7 +7,7 @@ public class RocketLayers {
 
     public static final ModelLayerLocation ROCKET_LAYER =
             new ModelLayerLocation(
-                    new ResourceLocation("ronrockets", "rocket"),
+                    ResourceLocation.fromNamespaceAndPath("ronrockets", "rocket"),
                     "main"
             );
 }
