@@ -7,32 +7,27 @@ import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
 import com.solegendary.reignofnether.player.PlayerServerEvents;
-import com.solegendary.reignofnether.building.BuildingServerEvents;
 
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
-public class PiglinRocketSilo extends Building {
+public class PiglinRocketSilo extends AbstractRocketSilo {
 
     public static final String STRUCTURE_NAME = "piglin_rocket_silo";
-    public static final ResourceCost COST =
-            ResourceCost.Building(1000, 800, 600, 0);
+    public static final ResourceCost COST = ResourceCost.Building(1000, 800, 600, 0);
 
     public PiglinRocketSilo() {
-        super(STRUCTURE_NAME, COST, false);
+        super(STRUCTURE_NAME);
 
-        this.name = "Rocket Silo";
         this.portraitBlock = Blocks.IRON_BLOCK;
         this.icon = ResourceLocation.fromNamespaceAndPath(
                 "minecraft",
@@ -48,36 +43,26 @@ public class PiglinRocketSilo extends Building {
     }
 
     @Override
-    public ArrayList<BuildingBlock> getRelativeBlockData(LevelAccessor level) {
-        return BuildingBlockData.getBuildingBlocksFromNbt(
-                this.structureName,
-                level
-        );
-    }
-
-    @Override
     public BuildingPlacement createBuildingPlacement(
             Level level,
             BlockPos pos,
             Rotation rotation,
             String ownerName
     ) {
+        if (!level.isClientSide()) {
+            for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
+                if (placement.getBuilding() instanceof AbstractRocketSilo
+                        && placement.ownerName.equals(ownerName)
+                        && placement.isBuilt) {
 
-        // ✅ One silo per team restriction
-        for (BuildingPlacement placement :
-                BuildingServerEvents.getBuildings()) {
+                    PlayerServerEvents.sendMessageToAllPlayers(
+                            "You already have a Rocket Silo!",
+                            false,
+                            ownerName
+                    );
 
-            if (placement.getBuilding() instanceof PiglinRocketSilo
-                    && placement.ownerName.equals(ownerName)
-                    && placement.isBuilt) {
-
-                PlayerServerEvents.sendMessageToAllPlayers(
-                        "You already have a Rocket Silo!",
-                        false,
-                        ownerName
-                );
-
-                return null; // cancel placement
+                    return null; 
+                }
             }
         }
 
@@ -99,10 +84,7 @@ public class PiglinRocketSilo extends Building {
 
     @Override
     public BuildingPlaceButton getBuildButton(Keybinding hotkey) {
-
-        ResourceLocation key =
-                ReignOfNetherRegistries.BUILDING.getKey(this);
-
+        ResourceLocation key = ReignOfNetherRegistries.BUILDING.getKey(this);
         String name = I18n.get(
                 "buildings." +
                         getFaction().name().toLowerCase() +
