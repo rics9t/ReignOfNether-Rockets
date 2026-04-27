@@ -10,8 +10,8 @@
   "tooltip.ronrockets.shield_radius": "Intercept Radius: 64",
   "tooltip.ronrockets.shield_cooldown": "Cooldown: 30s",
 
-  "building.ronrockets.rocket_silo": "Rocket Silo",
-  "building.ronrockets.shield_array": "Shield Array",
+  "buildings.villagers.ronrockets.villager_rocket_silo": "Rocket Silo"
+  "buildings.villagers.ronrockets.shield_array": "Shield Array"
 
   "hud.ronrockets.rocket_incoming": "Incoming Rocket!",
   "hud.ronrockets.rocket_intercepted": "Rocket Intercepted!"
