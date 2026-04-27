@@ -25,6 +25,7 @@ public class RocketProd extends ProductionItem {
 
         this.onComplete = (Level level, ProductionPlacement placement) -> {
             if (!level.isClientSide()) {
+
                 placement.getAbilities().forEach(ability -> {
                     if (ability instanceof ProduceRocketAbility produce) {
                         int current = placement.getCharges(produce);
