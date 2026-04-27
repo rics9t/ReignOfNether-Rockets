@@ -1,9 +1,10 @@
 package com.rics.ronrockets;
 
 import com.rics.ronrockets.building.RocketBuildings;
+import com.rics.ronrockets.client.RocketClientEvents;
 import com.rics.ronrockets.entity.RocketEntities;
 import com.rics.ronrockets.shield.ShieldEnergyManager;
-import com.rics.ronrockets.client.RocketClientEvents;
+import com.rics.ronrockets.shield.ShieldVisualTickHandler;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -19,16 +20,12 @@ public class RonRocketsMod {
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // ✅ Register entity types
         RocketEntities.register(modBus);
-
-        // ✅ Register buildings
         RocketBuildings.register();
 
-        // ✅ Register server tick system
         MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
+        MinecraftForge.EVENT_BUS.register(ShieldVisualTickHandler.class);
 
-        // ✅ Register client tick system
         MinecraftForge.EVENT_BUS.register(RocketClientEvents.class);
     }
 }
