@@ -12,6 +12,9 @@ import net.minecraft.resources.ResourceLocation;
 
 public class RocketRenderer extends EntityRenderer<RocketEntity> {
 
+    private static final ResourceLocation TEXTURE =
+            ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/entity/rocket.png");
+
     private final RocketModel model;
 
     public RocketRenderer(EntityRendererProvider.Context context) {
@@ -20,7 +23,8 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
     }
 
     @Override
-    public void render(RocketEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
+    public void render(RocketEntity entity, float entityYaw, float partialTicks,
+                       PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         poseStack.pushPose();
 
         double vx = entity.getDeltaMovement().x;
@@ -33,17 +37,18 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
         poseStack.mulPose(Axis.YP.rotation(-yaw));
         poseStack.mulPose(Axis.ZP.rotation(pitch));
 
-        var vertex = buffer.getBuffer(net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
+        var vertex = buffer.getBuffer(
+                net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
 
-        model.renderToBuffer(poseStack, vertex, packedLight, OverlayTexture.NO_OVERLAY, 1f, 1f, 1f, 1f);
+        model.renderToBuffer(poseStack, vertex, packedLight,
+                OverlayTexture.NO_OVERLAY, 1f, 1f, 1f, 1f);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
     }
 
-    // ✅ Uses your custom Rocket texture!
     @Override
     public ResourceLocation getTextureLocation(RocketEntity entity) {
-        return new ResourceLocation("ronrockets", "textures/entity/rocket.png");
+        return TEXTURE;
     }
 }
