@@ -35,7 +35,9 @@ public class ShieldArrayBuilding extends Building {
                 "textures/block/beacon.png"
         );
 
-        this.startingBlockTypes.add(Blocks.BEACON);
+        this.startingBlockTypes.add(Blocks.POLISHED_ANDESITE_STAIRS);
+        this.startingBlockTypes.add(Blocks.LODESTONE);
+        
     }
 
     @Override
