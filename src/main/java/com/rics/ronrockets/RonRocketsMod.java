@@ -4,6 +4,7 @@ import com.rics.ronrockets.building.RocketBuildings;
 import com.rics.ronrockets.client.RocketClientEvents;
 import com.rics.ronrockets.entity.RocketEntities;
 import com.rics.ronrockets.shield.ShieldEnergyManager;
+import com.rics.ronrockets.shield.ShieldInterceptHandler;
 import com.rics.ronrockets.shield.ShieldVisualTickHandler;
 
 import net.minecraftforge.common.MinecraftForge;
@@ -25,7 +26,7 @@ public class RonRocketsMod {
 
         MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
         MinecraftForge.EVENT_BUS.register(ShieldVisualTickHandler.class);
-
+        MinecraftForge.EVENT_BUS.register(ShieldInterceptHandler.class);
         MinecraftForge.EVENT_BUS.register(RocketClientEvents.class);
     }
 }
