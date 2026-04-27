@@ -18,7 +18,7 @@ public class ShieldArrayBuilding extends Building {
 
     public ShieldArrayBuilding(String structureName) {
         super(structureName,
-                new ResourceCost(200, 300, 500, 0, 0),
+                ResourceCost.Building(200, 300, 500, 0),
                 false
         );
 
