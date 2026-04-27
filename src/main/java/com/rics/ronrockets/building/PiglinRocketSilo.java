@@ -6,6 +6,8 @@ import com.solegendary.reignofnether.faction.Faction;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
+import com.solegendary.reignofnether.player.PlayerServerEvents;
+import com.solegendary.reignofnether.building.BuildingServerEvents;
 
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
@@ -77,13 +79,38 @@ public class PiglinRocketSilo extends Building {
     }
 
     @Override
+    public boolean canAfford(String ownerName) {
+
+        for (BuildingPlacement placement :
+                BuildingServerEvents.getBuildings()) {
+
+            if (placement.getBuilding() instanceof PiglinRocketSilo
+                    && placement.ownerName.equals(ownerName)
+                    && placement.isBuilt) {
+
+                PlayerServerEvents.sendMessageToAllPlayers(
+                        "You already have a Rocket Silo!",
+                        false,
+                        ownerName
+                );
+
+                return false;
+            }
+        }
+
+        return super.canAfford(ownerName);
+    }
+
+    @Override
     public BuildingPlaceButton getBuildButton(Keybinding hotkey) {
 
         ResourceLocation key =
                 ReignOfNetherRegistries.BUILDING.getKey(this);
 
         String name = I18n.get(
-                "buildings.piglins." +
+                "buildings." +
+                        getFaction().name().toLowerCase() +
+                        "." +
                         key.getNamespace() +
                         "." +
                         key.getPath()
@@ -93,8 +120,7 @@ public class PiglinRocketSilo extends Building {
                 name,
                 this.icon,
                 hotkey,
-                () -> BuildingClientEvents.getBuildingToPlace()
-                        == RocketBuildings.PIGLIN_SILO,
+                () -> BuildingClientEvents.getBuildingToPlace() == this,
                 () -> false,
                 () -> true,
                 List.of(
