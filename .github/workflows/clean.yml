@@ -1,4 +1,4 @@
-name: "Clean cache + build mod"
+name: "No cache Build mod"
 on:
   workflow_dispatch:
     inputs:
@@ -39,8 +39,8 @@ jobs:
         if: ${{ runner.os != 'Windows' }}
         run: chmod +x ./gradlew
 
-      - name: Clean cache + build with Gradle
-        run: ./gradlew clean build
+      - name: No cache build with Gradle
+        run: ./gradlew build --no-build-cache
 
       - name: Capture Build Artifacts
         uses: actions/upload-artifact@v4
