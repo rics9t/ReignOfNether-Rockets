@@ -37,6 +37,8 @@ public class ShieldArrayBuilding extends Building {
 
         this.startingBlockTypes.add(Blocks.POLISHED_ANDESITE_STAIRS);
         this.startingBlockTypes.add(Blocks.LODESTONE);
+
+        this.abilities.add(new com.rics.ronrockets.ability.ShieldInterceptAbility());
         
     }
 
