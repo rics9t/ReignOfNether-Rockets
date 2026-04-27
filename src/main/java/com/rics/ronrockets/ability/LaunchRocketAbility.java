@@ -29,63 +29,55 @@ public class LaunchRocketAbility extends Ability {
     }
 
     @Override
-public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
+    public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
 
-    return new AbilityButton(
-            "Launch Rocket",
-            new ResourceLocation("ronrockets", "textures/icons/launch_rocket.png"),
-            hotkey,
-            () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
-            () -> placement.getAbilities().stream()
-                    .noneMatch(a -> a instanceof ProduceRocketAbility produce &&
-                            placement.getCharges(produce) > 0),
-            () -> isOffCooldown(placement),
-            () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
-            null,
-            List.of(
-                    FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
-                    FormattedCharSequence.forward("Click target location", Style.EMPTY)
-            ),
-            this,
-            placement
-    );
-}
+        int rockets = placement.getCharges(ProduceRocketAbility.INSTANCE);
+
+        return new AbilityButton(
+                "Launch Rocket",
+                new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
+                hotkey,
+                () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
+                () -> rockets <= 0,
+                () -> true,
+                () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
+                null,
+                List.of(
+                        FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
+                        FormattedCharSequence.forward("Stored Rockets: " + rockets, Style.EMPTY),
+                        FormattedCharSequence.forward("Click target location", Style.EMPTY)
+                ),
+                this,
+                placement
+        );
+    }
 
     @Override
     public void use(Level level, BuildingPlacement buildingUsing, BlockPos targetBp) {
 
-        if (level.isClientSide()) return;
         if (!(buildingUsing.getBuilding() instanceof AbstractRocketSilo)) return;
 
-        for (var ability : buildingUsing.getAbilities()) {
-            if (ability instanceof ProduceRocketAbility produce) {
+        int rockets = buildingUsing.getCharges(ProduceRocketAbility.INSTANCE);
+        if (rockets <= 0) return;
 
-                if (buildingUsing.getCharges(produce) <= 0) return;
+        // Server-only: spawn entity + authoritative consume
+        if (!level.isClientSide()) {
+            ServerLevel serverLevel = (ServerLevel) level;
 
-                ServerLevel serverLevel = (ServerLevel) level;
+            RocketEntity rocket = new RocketEntity(RocketEntities.ROCKET.get(), serverLevel);
+            rocket.setPos(
+                    buildingUsing.centrePos.getX() + 0.5,
+                    buildingUsing.centrePos.getY() + 5,
+                    buildingUsing.centrePos.getZ() + 0.5
+            );
+            rocket.setTarget(targetBp);
+            rocket.setAttacker(buildingUsing.ownerName);
 
-                RocketEntity rocket = new RocketEntity(
-                        RocketEntities.ROCKET.get(),
-                        serverLevel
-                );
-
-                rocket.setPos(
-                        buildingUsing.centrePos.getX() + 0.5,
-                        buildingUsing.centrePos.getY() + 5,
-                        buildingUsing.centrePos.getZ() + 0.5
-                );
-
-                rocket.setTarget(targetBp);
-                rocket.setAttacker(buildingUsing.ownerName);
-
-                serverLevel.addFreshEntity(rocket);
-
-                buildingUsing.setCharges(produce,
-                        buildingUsing.getCharges(produce) - 1);
-
-                this.setToMaxCooldown(buildingUsing);
-                break;
-            }
+            serverLevel.addFreshEntity(rocket);
         }
+
+        // BOTH sides: update UI immediately
+        buildingUsing.setCharges(ProduceRocketAbility.INSTANCE, rockets - 1);
+        this.setToMaxCooldown(buildingUsing);
     }
 }
