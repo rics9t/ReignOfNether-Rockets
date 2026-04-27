@@ -1,5 +1,6 @@
 package com.rics.ronrockets.ability;
 
+import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.hud.AbilityButton;
@@ -7,10 +8,10 @@ import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.unit.UnitAction;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class ShieldInterceptAbility extends Ability {
 
     private static final int COOLDOWN = 30 * ResourceCost.TICKS_PER_SECOND;
     private static final int ACTIVE_DURATION = 10 * ResourceCost.TICKS_PER_SECOND;
+    private static final int INTERCEPT_COST = 250;
 
     public ShieldInterceptAbility() {
         super(UnitAction.NONE, COOLDOWN, 0, 0, false);
@@ -32,12 +34,13 @@ public class ShieldInterceptAbility extends Ability {
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/shield_intercept.png"),
                 hotkey,
                 () -> isShieldActive(placement),
-                () -> false,
+                () -> ShieldEnergyManager.getEnergy(placement) < INTERCEPT_COST,
                 () -> isOffCooldown(placement),
                 () -> use(placement.getLevel(), placement, placement.centrePos),
                 null,
                 List.of(
                         FormattedCharSequence.forward("Activate Shield", Style.EMPTY.withBold(true)),
+                        FormattedCharSequence.forward("Energy: " + ShieldEnergyManager.getEnergy(placement), Style.EMPTY),
                         FormattedCharSequence.forward("Duration: 10s", Style.EMPTY),
                         FormattedCharSequence.forward("Cooldown: 30s", Style.EMPTY)
                 ),
@@ -48,7 +51,12 @@ public class ShieldInterceptAbility extends Ability {
 
     @Override
     public void use(Level level, BuildingPlacement buildingUsing, BlockPos bp) {
+
         if (level.isClientSide()) return;
+
+        if (!ShieldEnergyManager.consumeEnergy(buildingUsing, INTERCEPT_COST))
+            return;
+
         this.setToMaxCooldown(buildingUsing);
     }
 
