@@ -18,4 +18,15 @@ public abstract class AbstractRocketSilo extends Building {
         this.abilities.add(new ProduceRocketAbility());
         this.abilities.add(new LaunchRocketAbility());
     }
+
+    // ✅ Makes the silo take 4x damage, massively reducing its effective health
+    @Override
+    public float getMeleeDamageMult() {
+        return 4.0f; 
+    }
+
+    @Override
+    public float getMagicDamageMult() {
+        return 4.0f;
+    }
 }
