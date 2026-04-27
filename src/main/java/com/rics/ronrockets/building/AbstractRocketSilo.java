@@ -8,6 +8,10 @@ import com.solegendary.reignofnether.building.production.ProductionBuilding;
 import com.solegendary.reignofnether.keybinds.Keybindings;
 import com.solegendary.reignofnether.resources.ResourceCost;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Rotation;
+
 public abstract class AbstractRocketSilo extends ProductionBuilding {
 
     public AbstractRocketSilo(String structureName) {
@@ -18,21 +22,21 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
         // Production queue
         this.productions.add(new RocketProd(), Keybindings.keyQ);
 
-        // Visible ability
+        // Launch ability (visible)
         this.abilities.add(new LaunchRocketAbility(), Keybindings.keyW);
     }
 
     @Override
     public BuildingPlacement createBuildingPlacement(
-            net.minecraft.world.level.Level level,
-            net.minecraft.core.BlockPos pos,
-            net.minecraft.world.level.block.Rotation rotation,
+            Level level,
+            BlockPos pos,
+            Rotation rotation,
             String ownerName) {
 
         BuildingPlacement placement =
                 super.createBuildingPlacement(level, pos, rotation, ownerName);
 
-        // ✅ Inject storage ability AFTER placement creation
+        // ✅ Inject hidden storage ability AFTER creation
         placement.getAbilities().add(new ProduceRocketAbility());
 
         return placement;
