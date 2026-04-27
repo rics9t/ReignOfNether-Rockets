@@ -1,12 +1,16 @@
 package com.rics.ronrockets.building;
 
+import com.rics.ronrockets.ability.ProduceRocketAbility;
 import com.solegendary.reignofnether.api.ReignOfNetherRegistries;
-import com.solegendary.reignofnether.building.*;
+import com.solegendary.reignofnether.building.BuildingClientEvents;
+import com.solegendary.reignofnether.building.BuildingPlaceButton;
+import com.solegendary.reignofnether.building.BuildingPlacement;
+import com.solegendary.reignofnether.building.BuildingServerEvents;
 import com.solegendary.reignofnether.faction.Faction;
 import com.solegendary.reignofnether.keybinds.Keybinding;
+import com.solegendary.reignofnether.player.PlayerServerEvents;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
-import com.solegendary.reignofnether.player.PlayerServerEvents;
 
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
@@ -29,12 +33,10 @@ public class PiglinRocketSilo extends AbstractRocketSilo {
         super(STRUCTURE_NAME);
 
         this.portraitBlock = Blocks.IRON_BLOCK;
-        this.icon = ResourceLocation.fromNamespaceAndPath(
-                "minecraft",
-                "textures/block/iron_block.png"
-        );
+        this.icon = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/iron_block.png");
 
-        this.startingBlockTypes.add(Blocks.IRON_BLOCK);
+        this.startingBlockTypes.add(Blocks.OAK_PLANKS);
+        this.startingBlockTypes.add(Blocks.COBBLESTONE);
     }
 
     @Override
@@ -43,12 +45,7 @@ public class PiglinRocketSilo extends AbstractRocketSilo {
     }
 
     @Override
-    public BuildingPlacement createBuildingPlacement(
-            Level level,
-            BlockPos pos,
-            Rotation rotation,
-            String ownerName
-    ) {
+    public BuildingPlacement createBuildingPlacement(Level level, BlockPos pos, Rotation rotation, String ownerName) {
         if (!level.isClientSide()) {
             for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
                 if (placement.getBuilding() instanceof AbstractRocketSilo
@@ -61,38 +58,30 @@ public class PiglinRocketSilo extends AbstractRocketSilo {
                             ownerName
                     );
 
-                    return null; 
+                    return null;
                 }
             }
         }
 
-        return new BuildingPlacement(
+        BuildingPlacement placement = new BuildingPlacement(
                 this,
                 level,
                 pos,
                 rotation,
                 ownerName,
-                getAbsoluteBlockData(
-                        getRelativeBlockData(level),
-                        level,
-                        pos,
-                        rotation
-                ),
+                getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
                 false
         );
+
+        // Critical: start with 0 rockets stored
+        placement.setCharges(ProduceRocketAbility.INSTANCE, 0);
+        return placement;
     }
 
     @Override
     public BuildingPlaceButton getBuildButton(Keybinding hotkey) {
         ResourceLocation key = ReignOfNetherRegistries.BUILDING.getKey(this);
-        String name = I18n.get(
-                "buildings." +
-                        getFaction().name().toLowerCase() +
-                        "." +
-                        key.getNamespace() +
-                        "." +
-                        key.getPath()
-        );
+        String name = I18n.get("buildings." + getFaction().name().toLowerCase() + "." + key.getNamespace() + "." + key.getPath());
 
         return new BuildingPlaceButton(
                 name,
