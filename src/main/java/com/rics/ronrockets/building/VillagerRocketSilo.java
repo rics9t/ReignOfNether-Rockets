@@ -55,7 +55,7 @@ public class VillagerRocketSilo extends com.solegendary.reignofnether.building.B
                 name,
                 this.icon,
                 hotkey,
-                () -> BuildingClientEvents.getBuildingToPlace() == this,
+                () -> BuildingClientEvents.getBuildingToPlace() == RocketBuildings.VILLAGER_SILO,
                 () -> false,
                 () -> true,
                 List.of(
