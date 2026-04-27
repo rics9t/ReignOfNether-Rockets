@@ -23,16 +23,16 @@ import java.util.List;
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
-public class VillagerRocketSilo extends Building {
+// ✅ FIX 1: Make sure to extend AbstractRocketSilo so you inherit the abilities!
+public class VillagerRocketSilo extends AbstractRocketSilo {
 
     public static final String STRUCTURE_NAME = "villager_rocket_silo";
-    public static final ResourceCost COST =
-            ResourceCost.Building(1000, 800, 600, 0);
+    public static final ResourceCost COST = ResourceCost.Building(1000, 800, 600, 0);
 
     public VillagerRocketSilo() {
-        super(STRUCTURE_NAME, COST, false);
+        // ✅ FIX 2: Pass the STRUCTURE_NAME to the superclass constructor
+        super(STRUCTURE_NAME);
 
-        this.name = "Rocket Silo";
         this.portraitBlock = Blocks.IRON_BLOCK;
         this.icon = ResourceLocation.fromNamespaceAndPath(
                 "minecraft",
@@ -63,21 +63,21 @@ public class VillagerRocketSilo extends Building {
             String ownerName
     ) {
 
-        // ✅ One silo per team restriction
-        for (BuildingPlacement placement :
-                BuildingServerEvents.getBuildings()) {
+        // ✅ FIX 3: Wrap the entire restriction check in !level.isClientSide()
+        if (!level.isClientSide()) {
+            for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
+                if (placement.getBuilding() instanceof AbstractRocketSilo // Use the abstract class here!
+                        && placement.ownerName.equals(ownerName)
+                        && placement.isBuilt) {
 
-            if (placement.getBuilding() instanceof VillagerRocketSilo
-                    && placement.ownerName.equals(ownerName)
-                    && placement.isBuilt) {
+                    PlayerServerEvents.sendMessageToAllPlayers(
+                            "You already have a Rocket Silo!",
+                            false,
+                            ownerName
+                    );
 
-                PlayerServerEvents.sendMessageToAllPlayers(
-                        "You already have a Rocket Silo!",
-                        false,
-                        ownerName
-                );
-
-                return null; // cancel placement
+                    return null; // cancel placement
+                }
             }
         }
 
@@ -99,9 +99,7 @@ public class VillagerRocketSilo extends Building {
 
     @Override
     public BuildingPlaceButton getBuildButton(Keybinding hotkey) {
-
-        ResourceLocation key =
-                ReignOfNetherRegistries.BUILDING.getKey(this);
+        ResourceLocation key = ReignOfNetherRegistries.BUILDING.getKey(this);
 
         String name = I18n.get(
                 "buildings." +
