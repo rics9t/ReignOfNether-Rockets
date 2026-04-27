@@ -1,6 +1,5 @@
 package com.rics.ronrockets.building;
 
-import com.rics.ronrockets.RonRocketsMod;
 import com.solegendary.reignofnether.api.ReignOfNetherRegistries;
 import com.solegendary.reignofnether.faction.Faction;
 import com.solegendary.reignofnether.faction.FactionRegistries;
@@ -20,25 +19,26 @@ public class RocketBuildings {
 
         VILLAGER_SILO = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
-                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "villager_rocket_silo"),
+                // ✅ Changed to "reignofnether"
+                ResourceLocation.fromNamespaceAndPath("reignofnether", "villager_rocket_silo"),
                 new VillagerRocketSilo()
         );
 
         MONSTER_SILO = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
-                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "monster_rocket_silo"),
+                ResourceLocation.fromNamespaceAndPath("reignofnether", "monster_rocket_silo"),
                 new MonsterRocketSilo()
         );
 
         PIGLIN_SILO = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
-                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "piglin_rocket_silo"),
+                ResourceLocation.fromNamespaceAndPath("reignofnether", "piglin_rocket_silo"),
                 new PiglinRocketSilo()
         );
 
         SHIELD_ARRAY = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
-                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "shield_array"),
+                ResourceLocation.fromNamespaceAndPath("reignofnether", "shield_array"),
                 new ShieldArrayBuilding()
         );
 
