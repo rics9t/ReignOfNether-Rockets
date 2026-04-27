@@ -11,11 +11,9 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
@@ -24,9 +22,7 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 public class ShieldArrayBuilding extends Building {
 
     public static final String STRUCTURE_NAME = "shield_array";
-    public static final ResourceCost COST =
-            ResourceCost.Building(200, 300, 500, 0);
-
+    public static final ResourceCost COST = ResourceCost.Building(200, 300, 500, 0);
     public static final int SHIELD_RADIUS = 64;
 
     public ShieldArrayBuilding() {
@@ -39,21 +35,12 @@ public class ShieldArrayBuilding extends Building {
                 "textures/block/beacon.png"
         );
 
-        // ✅ REQUIRED for preview
         this.startingBlockTypes.add(Blocks.BEACON);
     }
 
     @Override
     public Faction getFaction() {
         return Faction.NONE;
-    }
-
-    @Override
-    public ArrayList<BuildingBlock> getRelativeBlockData(LevelAccessor level) {
-        return BuildingBlockData.getBuildingBlocksFromNbt(
-                this.structureName,
-                level
-        );
     }
 
     @Override
@@ -81,10 +68,7 @@ public class ShieldArrayBuilding extends Building {
 
     @Override
     public BuildingPlaceButton getBuildButton(Keybinding hotkey) {
-
-        ResourceLocation key =
-                ReignOfNetherRegistries.BUILDING.getKey(this);
-
+        ResourceLocation key = ReignOfNetherRegistries.BUILDING.getKey(this);
         String name = I18n.get(
                 "buildings.none." +
                         key.getNamespace() +
