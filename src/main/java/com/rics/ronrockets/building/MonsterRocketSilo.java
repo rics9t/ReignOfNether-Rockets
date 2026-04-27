@@ -33,13 +33,13 @@ public class MonsterRocketSilo extends Building {
         super(STRUCTURE_NAME, COST, false);
 
         this.name = "Rocket Silo";
-        this.portraitBlock = Blocks.OBSIDIAN;
+        this.portraitBlock = Blocks.IRON_BLOCK;
         this.icon = ResourceLocation.fromNamespaceAndPath(
                 "minecraft",
-                "textures/block/obsidian.png"
+                "textures/block/iron_block.png"
         );
 
-        this.startingBlockTypes.add(Blocks.OBSIDIAN);
+        this.startingBlockTypes.add(Blocks.IRON_BLOCK);
     }
 
     @Override
@@ -62,6 +62,25 @@ public class MonsterRocketSilo extends Building {
             Rotation rotation,
             String ownerName
     ) {
+
+        // ✅ One silo per team restriction
+        for (BuildingPlacement placement :
+                BuildingServerEvents.getBuildings()) {
+
+            if (placement.getBuilding() instanceof MonsterRocketSilo
+                    && placement.ownerName.equals(ownerName)
+                    && placement.isBuilt) {
+
+                PlayerServerEvents.sendMessageToAllPlayers(
+                        "You already have a Rocket Silo!",
+                        false,
+                        ownerName
+                );
+
+                return null; // cancel placement
+            }
+        }
+
         return new BuildingPlacement(
                 this,
                 level,
@@ -76,29 +95,6 @@ public class MonsterRocketSilo extends Building {
                 ),
                 false
         );
-    }
-
-    @Override
-    public boolean canAfford(String ownerName) {
-
-        for (BuildingPlacement placement :
-                BuildingServerEvents.getBuildings()) {
-
-            if (placement.getBuilding() instanceof MonsterRocketSilo
-                    && placement.ownerName.equals(ownerName)
-                    && placement.isBuilt) {
-
-                PlayerServerEvents.sendMessageToAllPlayers(
-                        "You already have a Rocket Silo!",
-                        false,
-                        ownerName
-                );
-
-                return false;
-            }
-        }
-
-        return super.canAfford(ownerName);
     }
 
     @Override
