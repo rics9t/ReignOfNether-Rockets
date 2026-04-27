@@ -1,7 +1,7 @@
 package com.rics.ronrockets.ability;
 
 import com.rics.ronrockets.RonRocketsMod;
-import com.rics.ronrockets.shield.ShieldEnergyManager;
+import com.rics.ronrockets.shield.ShieldStateManager;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.hud.AbilityButton;
@@ -20,6 +20,8 @@ import java.util.List;
 
 public class ShieldInterceptAbility extends Ability {
 
+    private static final int ACTIVATION_COST = 150;
+
     public ShieldInterceptAbility() {
         super(UnitAction.NONE, 0, 0, 0, false);
     }
@@ -27,15 +29,13 @@ public class ShieldInterceptAbility extends Ability {
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
 
-        int energy = ShieldEnergyManager.getEnergy(placement);
-
         return new AbilityButton(
                 I18n.get("abilities.ronrockets.shield_intercept"),
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/shield_intercept.png"),
                 hotkey,
                 () -> false,
                 () -> false,
-                () -> ShieldEnergyManager.canActivate(placement),
+                () -> ShieldStateManager.canActivate(placement),
                 () -> this.use(placement.getLevel(), placement, placement.centrePos),
                 null,
                 List.of(
@@ -44,15 +44,19 @@ public class ShieldInterceptAbility extends Ability {
                                 Style.EMPTY.withBold(true)
                         ),
                         FormattedCharSequence.forward(
-                                "Energy: " + energy + " / 300",
+                                "Radius: 64 blocks",
                                 Style.EMPTY
                         ),
                         FormattedCharSequence.forward(
-                                "Recharge Cost: 150 Ore",
+                                "Active Duration: 10s",
                                 Style.EMPTY
                         ),
                         FormattedCharSequence.forward(
-                                "Recharge Time: 30s",
+                                "Cooldown: 30s",
+                                Style.EMPTY
+                        ),
+                        FormattedCharSequence.forward(
+                                "Activation Cost: 150 Ore",
                                 Style.EMPTY
                         )
                 ),
@@ -65,18 +69,17 @@ public class ShieldInterceptAbility extends Ability {
     public void use(Level level, BuildingPlacement buildingUsing, net.minecraft.core.BlockPos bp) {
 
         if (level.isClientSide()) return;
-
-        if (!ShieldEnergyManager.canActivate(buildingUsing)) return;
+        if (!ShieldStateManager.canActivate(buildingUsing)) return;
 
         if (!ResourcesServerEvents.canAfford(
                 buildingUsing.ownerName,
                 ResourceName.ORE,
-                150)) return;
+                ACTIVATION_COST)) return;
 
         ResourcesServerEvents.addSubtractResources(
-                new Resources(buildingUsing.ownerName, 0, 0, -150)
+                new Resources(buildingUsing.ownerName, 0, 0, -ACTIVATION_COST)
         );
 
-        ShieldEnergyManager.activate(buildingUsing);
+        ShieldStateManager.activate(buildingUsing);
     }
 }
