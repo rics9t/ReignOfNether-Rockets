@@ -39,7 +39,6 @@ public class VillagerRocketSilo extends Building {
                 "textures/block/iron_block.png"
         );
 
-        // REQUIRED for ghost preview
         this.startingBlockTypes.add(Blocks.IRON_BLOCK);
     }
 
@@ -63,6 +62,25 @@ public class VillagerRocketSilo extends Building {
             Rotation rotation,
             String ownerName
     ) {
+
+        // ✅ One silo per team restriction
+        for (BuildingPlacement placement :
+                BuildingServerEvents.getBuildings()) {
+
+            if (placement.getBuilding() instanceof VillagerRocketSilo
+                    && placement.ownerName.equals(ownerName)
+                    && placement.isBuilt) {
+
+                PlayerServerEvents.sendMessageToAllPlayers(
+                        "You already have a Rocket Silo!",
+                        false,
+                        ownerName
+                );
+
+                return null; // cancel placement
+            }
+        }
+
         return new BuildingPlacement(
                 this,
                 level,
@@ -77,29 +95,6 @@ public class VillagerRocketSilo extends Building {
                 ),
                 false
         );
-    }
-
-    @Override
-    public boolean canAfford(String ownerName) {
-
-        for (BuildingPlacement placement :
-                BuildingServerEvents.getBuildings()) {
-
-            if (placement.getBuilding() instanceof VillagerRocketSilo
-                    && placement.ownerName.equals(ownerName)
-                    && placement.isBuilt) {
-
-                PlayerServerEvents.sendMessageToAllPlayers(
-                        "You already have a Rocket Silo!",
-                        false,
-                        ownerName
-                );
-
-                return false;
-            }
-        }
-
-        return super.canAfford(ownerName);
     }
 
     @Override
