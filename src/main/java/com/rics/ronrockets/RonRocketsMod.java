@@ -2,7 +2,6 @@ package com.rics.ronrockets;
 
 import com.rics.ronrockets.building.RocketBuildings;
 import com.rics.ronrockets.entity.RocketEntities;
-import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.rics.ronrockets.client.RocketClientEvents;
 
@@ -26,8 +25,7 @@ public class RonRocketsMod {
         // ✅ Register buildings
         RocketBuildings.register();
 
-        // ✅ Register server tick systems
-        MinecraftForge.EVENT_BUS.register(RocketManager.class);
+        // ✅ Register server tick system
         MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
 
         // ✅ Register client tick system
