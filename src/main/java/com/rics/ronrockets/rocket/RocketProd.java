@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class RocketProd extends ProductionItem {
@@ -39,6 +40,22 @@ public class RocketProd extends ProductionItem {
 
     @Override
     public StartProductionButton getStartButton(ProductionPlacement prodBuilding, Keybinding hotkey) {
+        List<FormattedCharSequence> tooltips = new ArrayList<>();
+        tooltips.add(FormattedCharSequence.forward(
+                I18n.get("abilities.ronrockets.produce_rocket"),
+                Style.EMPTY.withBold(true)
+        ));
+
+        FormattedCharSequence costText = ResourceCosts.getFormattedCost(COST);
+        if (costText != null) {
+            tooltips.add(costText);
+        }
+
+        FormattedCharSequence popTimeText = ResourceCosts.getFormattedPopAndTime(COST);
+        if (popTimeText != null) {
+            tooltips.add(popTimeText);
+        }
+
         return new StartProductionButton(
                 I18n.get("abilities.ronrockets.produce_rocket"),
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
@@ -46,14 +63,7 @@ public class RocketProd extends ProductionItem {
                 () -> false,
                 () -> prodBuilding.getCharges(ProduceRocketAbility.INSTANCE)
                         >= ProduceRocketAbility.MAX_ROCKETS,
-                List.of(
-                        FormattedCharSequence.forward(
-                                I18n.get("abilities.ronrockets.produce_rocket"),
-                                Style.EMPTY.withBold(true)
-                        ),
-                        ResourceCosts.getFormattedCost(COST),
-                        ResourceCosts.getFormattedPopAndTime(COST)
-                ),
+                tooltips,
                 this
         );
     }
