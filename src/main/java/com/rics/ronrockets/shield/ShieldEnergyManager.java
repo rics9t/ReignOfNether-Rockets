@@ -18,7 +18,7 @@ public class ShieldEnergyManager {
 
     private static final int MAX_ENERGY = 500;
     private static final int INTERCEPT_COST = 250;
-    private static final int REFILL_AMOUNT = 10;
+    private static final int REFILL_AMOUNT = 5;
     private static final int REFILL_COST = 2;
 
     private static final Map<BuildingPlacement, Integer> energyMap = new HashMap<>();
