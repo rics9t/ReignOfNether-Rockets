@@ -1,11 +1,20 @@
 {
   "abilities.ronrockets.launch_rocket": "Launch Rocket",
   "abilities.ronrockets.shield_intercept": "Shield Intercept",
+  "abilities.ronrockets.produce_rocket": "Produce Rocket",
 
   "buildings.villagers.reignofnether.villager_rocket_silo": "Villager Rocket Silo",
   "buildings.monsters.reignofnether.monster_rocket_silo": "Monster Rocket Silo",
   "buildings.piglins.reignofnether.piglin_rocket_silo": "Piglin Rocket Silo",
   "buildings.none.reignofnether.shield_array": "Shield Array",
+
+  "tooltip.ronrockets.launch_damage": "Deals heavy area damage to buildings",
+  "tooltip.ronrockets.unit_damage": "Deals up to 200 damage to units in radius",
+  "tooltip.ronrockets.silo_desc": "Produces and launches strategic rockets",
+  "tooltip.ronrockets.shield_energy": "Energy: %d",
+  "tooltip.ronrockets.shield_duration": "Duration: 10s",
+  "tooltip.ronrockets.shield_cooldown": "Cooldown: 30s",
+  "tooltip.ronrockets.shield_desc": "Intercepts incoming rockets within radius",
 
   "hud.ronrockets.rocket_incoming": "Incoming Rocket!",
   "hud.ronrockets.rocket_intercepted": "Rocket Intercepted!"
