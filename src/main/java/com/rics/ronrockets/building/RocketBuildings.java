@@ -39,7 +39,7 @@ public class RocketBuildings {
         SHIELD_ARRAY = Registry.register(
                 ReignOfNetherRegistries.BUILDING,
                 ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "shield_array"),
-                new ShieldArrayBuilding("shield_array")
+                new ShieldArrayBuilding()
         );
 
         // ✅ Register to faction build menus
