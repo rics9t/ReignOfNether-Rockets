@@ -1,17 +1,11 @@
 {
-  "abilities.ronrockets.produce_rocket": "Производство ракеты",
   "abilities.ronrockets.launch_rocket": "Запустить ракету",
   "abilities.ronrockets.shield_intercept": "Перехват ракеты",
 
-  "tooltip.ronrockets.produce_time": "Время производства: 120с",
-  "tooltip.ronrockets.stored_rockets": "Запас ракет: %s/2",
-  "tooltip.ronrockets.launch_damage": "Урон: 80%% (40%% по столице)",
-  "tooltip.ronrockets.unit_damage": "Урон юнитам: 50",
-  "tooltip.ronrockets.shield_radius": "Радиус перехвата: 64",
-  "tooltip.ronrockets.shield_cooldown": "Перезарядка: 30с",
-
-  "buildings.villagers.ronrockets.villager_rocket_silo": "Ракетная шахта",
-  "buildings.villagers.ronrockets.shield_array": "Щитовой массив",
+  "buildings.villagers.reignofnether.villager_rocket_silo": "Ракетная шахта крестьян",
+  "buildings.monsters.reignofnether.monster_rocket_silo": "Ракетная шахта монстров",
+  "buildings.piglins.reignofnether.piglin_rocket_silo": "Ракетная шахта пиглинов",
+  "buildings.none.reignofnether.shield_array": "Щитовой массив",
 
   "hud.ronrockets.rocket_incoming": "Входящая ракета!",
   "hud.ronrockets.rocket_intercepted": "Ракета перехвачена!"
