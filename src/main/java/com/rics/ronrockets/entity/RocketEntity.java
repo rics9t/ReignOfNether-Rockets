@@ -1,12 +1,12 @@
 package com.rics.ronrockets.entity;
 
 import com.rics.ronrockets.ability.ShieldInterceptAbility;
-import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
@@ -30,10 +30,17 @@ public class RocketEntity extends Entity {
         super(type, level);
     }
 
-    public void setTarget(BlockPos target) { this.target = target; }
-    public void setAttacker(String attacker) { this.attacker = attacker; }
+    public void setTarget(BlockPos target) {
+        this.target = target;
+    }
 
-    @Override protected void defineSynchedData() {}
+    public void setAttacker(String attacker) {
+        this.attacker = attacker;
+    }
+
+    @Override
+    protected void defineSynchedData() {
+    }
 
     @Override
     public void tick() {
@@ -50,14 +57,25 @@ public class RocketEntity extends Entity {
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             building.getAbilities().forEach(ability -> {
                 if (ability instanceof ShieldInterceptAbility shield) {
-                    if (shield.isShieldActive(building) &&
-                        building.centrePos.distToCenterSqr(getX(), getY(), getZ()) <= 64 * 64) {
+                    if (shield.isShieldActive(building)
+                            && building.centrePos.distToCenterSqr(getX(), getY(), getZ()) <= 64 * 64) {
 
-                        serverLevel.sendParticles(ParticleTypes.EXPLOSION_EMITTER,
+                        serverLevel.sendParticles(
+                                ParticleTypes.EXPLOSION_EMITTER,
                                 getX(), getY(), getZ(),
-                                3, 0, 0, 0, 0);
+                                3, 0, 0, 0, 0
+                        );
 
-                        this.discard();
+                        serverLevel.playSound(
+                                null,
+                                getX(), getY(), getZ(),
+                                SoundEvents.GENERIC_EXPLODE,
+                                SoundSource.MASTER,
+                                2.0f,
+                                1.0f
+                        );
+
+                        discard();
                     }
                 }
             });
@@ -69,32 +87,83 @@ public class RocketEntity extends Entity {
             startX = getX();
             startY = getY();
             startZ = getZ();
+
             double dist = Math.sqrt(target.distToCenterSqr(startX, startY, startZ));
-            maxFlightTicks = Math.max(20, (int)(dist / 1.5));
+            maxFlightTicks = Math.max(20, (int) (dist / 1.5));
         }
 
         flightTicks++;
 
         if (flightTicks >= maxFlightTicks) {
-            serverLevel.explode(null,
+
+            serverLevel.explode(
+                    null,
                     target.getX(),
                     target.getY(),
                     target.getZ(),
                     6f,
-                    Level.ExplosionInteraction.TNT);
+                    Level.ExplosionInteraction.TNT
+            );
 
             discard();
             return;
         }
 
-        double p = (double) flightTicks / maxFlightTicks;
+        double progress = (double) flightTicks / maxFlightTicks;
 
-        double nextX = startX + (target.getX() - startX) * p;
-        double nextZ = startZ + (target.getZ() - startZ) * p;
-        double arc = 30 * 4 * p * (1 - p);
+        double nextX = startX + (target.getX() - startX) * progress;
+        double nextZ = startZ + (target.getZ() - startZ) * progress;
+
+        double arcHeight = 30;
+        double arc = arcHeight * 4 * progress * (1 - progress);
         double nextY = startY + arc;
 
         setPos(nextX, nextY, nextZ);
+    }
+
+    // ✅ Required in Forge 1.20.1
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        if (tag.contains("TargetX")) {
+            target = new BlockPos(
+                    tag.getInt("TargetX"),
+                    tag.getInt("TargetY"),
+                    tag.getInt("TargetZ")
+            );
+        }
+
+        if (tag.contains("Attacker")) {
+            attacker = tag.getString("Attacker");
+        }
+
+        startX = tag.getDouble("StartX");
+        startY = tag.getDouble("StartY");
+        startZ = tag.getDouble("StartZ");
+
+        flightTicks = tag.getInt("FlightTicks");
+        maxFlightTicks = tag.getInt("MaxFlightTicks");
+    }
+
+    // ✅ Required in Forge 1.20.1
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+
+        if (target != null) {
+            tag.putInt("TargetX", target.getX());
+            tag.putInt("TargetY", target.getY());
+            tag.putInt("TargetZ", target.getZ());
+        }
+
+        if (attacker != null) {
+            tag.putString("Attacker", attacker);
+        }
+
+        tag.putDouble("StartX", startX);
+        tag.putDouble("StartY", startY);
+        tag.putDouble("StartZ", startZ);
+
+        tag.putInt("FlightTicks", flightTicks);
+        tag.putInt("MaxFlightTicks", maxFlightTicks);
     }
 
     @Override
