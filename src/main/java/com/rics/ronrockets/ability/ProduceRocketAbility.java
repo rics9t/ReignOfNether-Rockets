@@ -1,7 +1,6 @@
 package com.rics.ronrockets.ability;
 
 import com.solegendary.reignofnether.ability.Ability;
-import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.unit.UnitAction;
 
 public class ProduceRocketAbility extends Ability {
@@ -13,5 +12,5 @@ public class ProduceRocketAbility extends Ability {
         this.maxCharges = MAX_ROCKETS;
     }
 
-    // No button — purely internal storage
+    // No button override = no HUD slot
 }
