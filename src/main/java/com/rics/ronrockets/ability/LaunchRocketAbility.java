@@ -22,7 +22,7 @@ import java.util.List;
 
 public class LaunchRocketAbility extends Ability {
 
-    private static final int COOLDOWN = 100;
+    private static final int COOLDOWN = 100; // ~5 секунд
 
     public LaunchRocketAbility() {
         super(UnitAction.ATTACK_GROUND, COOLDOWN, 9999, 0, false);
@@ -30,22 +30,21 @@ public class LaunchRocketAbility extends Ability {
 
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
-
-        int rockets = placement.getCharges(ProduceRocketAbility.INSTANCE);
-
         return new AbilityButton(
                 "Launch Rocket",
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
                 hotkey,
                 () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
-                () -> rockets <= 0,
+                () -> placement.getCharges(ProduceRocketAbility.INSTANCE) <= 0,
                 () -> true,
                 () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
                 null,
                 List.of(
                         FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
-                        FormattedCharSequence.forward("Stored Rockets: " + rockets, Style.EMPTY),
-                        FormattedCharSequence.forward("Click target location", Style.EMPTY)
+                        FormattedCharSequence.forward(
+                                "Stored Rockets: " + placement.getCharges(ProduceRocketAbility.INSTANCE),
+                                Style.EMPTY),
+                        FormattedCharSequence.forward("Click to target location", Style.EMPTY)
                 ),
                 this,
                 placement
@@ -54,13 +53,12 @@ public class LaunchRocketAbility extends Ability {
 
     @Override
     public void use(Level level, BuildingPlacement buildingUsing, BlockPos targetBp) {
-
         if (!(buildingUsing.getBuilding() instanceof AbstractRocketSilo)) return;
 
         int rockets = buildingUsing.getCharges(ProduceRocketAbility.INSTANCE);
         if (rockets <= 0) return;
 
-        // Server-only: spawn entity + authoritative consume
+        // Сервер: спавн сущности
         if (!level.isClientSide()) {
             ServerLevel serverLevel = (ServerLevel) level;
 
@@ -76,7 +74,7 @@ public class LaunchRocketAbility extends Ability {
             serverLevel.addFreshEntity(rocket);
         }
 
-        // BOTH sides: update UI immediately
+        // Обе стороны: обновляем UI и заряды
         buildingUsing.setCharges(ProduceRocketAbility.INSTANCE, rockets - 1);
         this.setToMaxCooldown(buildingUsing);
     }
