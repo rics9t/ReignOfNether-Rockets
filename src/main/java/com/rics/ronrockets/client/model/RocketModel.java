@@ -21,7 +21,7 @@ public class RocketModel extends EntityModel<RocketEntity> {
             
 	private final ModelPart bone;
 
-	public Rocket(ModelPart root) {
+	public RocketModel(ModelPart root) {
 		this.bone = root.getChild("bone");
 	}
 
