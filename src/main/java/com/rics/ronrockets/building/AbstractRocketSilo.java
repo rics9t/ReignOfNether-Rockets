@@ -22,11 +22,6 @@ public abstract class AbstractRocketSilo extends Building {
     // ✅ Makes the silo take 4x damage, massively reducing its effective health
     @Override
     public float getMeleeDamageMult() {
-        return 4.0f; 
-    }
-
-    @Override
-    public float getMagicDamageMult() {
-        return 4.0f;
+        return 0.6f; 
     }
 }
