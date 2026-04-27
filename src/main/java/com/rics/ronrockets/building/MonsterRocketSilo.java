@@ -6,6 +6,7 @@ import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlaceButton;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.faction.Faction;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.player.PlayerServerEvents;
@@ -14,7 +15,9 @@ import com.solegendary.reignofnether.resources.ResourceCosts;
 
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Rotation;
@@ -22,7 +25,6 @@ import net.minecraft.world.level.block.Rotation;
 import java.util.List;
 
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
-import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class MonsterRocketSilo extends AbstractRocketSilo {
 
@@ -57,13 +59,12 @@ public class MonsterRocketSilo extends AbstractRocketSilo {
                             false,
                             ownerName
                     );
-
                     return null;
                 }
             }
         }
 
-        BuildingPlacement placement = new BuildingPlacement(
+        ProductionPlacement placement = new ProductionPlacement(
                 this,
                 level,
                 pos,
@@ -73,7 +74,6 @@ public class MonsterRocketSilo extends AbstractRocketSilo {
                 false
         );
 
-        // Critical: start with 0 rockets stored
         placement.setCharges(ProduceRocketAbility.INSTANCE, 0);
         return placement;
     }
@@ -81,7 +81,8 @@ public class MonsterRocketSilo extends AbstractRocketSilo {
     @Override
     public BuildingPlaceButton getBuildButton(Keybinding hotkey) {
         ResourceLocation key = ReignOfNetherRegistries.BUILDING.getKey(this);
-        String name = I18n.get("buildings." + getFaction().name().toLowerCase() + "." + key.getNamespace() + "." + key.getPath());
+        String name = I18n.get("buildings." + getFaction().name().toLowerCase()
+                + "." + key.getNamespace() + "." + key.getPath());
 
         return new BuildingPlaceButton(
                 name,
@@ -91,8 +92,13 @@ public class MonsterRocketSilo extends AbstractRocketSilo {
                 () -> false,
                 () -> true,
                 List.of(
-                        fcs(name, true),
-                        ResourceCosts.getFormattedCost(COST)
+                        FormattedCharSequence.forward(name, Style.EMPTY.withBold(true)),
+                        ResourceCosts.getFormattedCost(COST),
+                        FormattedCharSequence.forward("", Style.EMPTY),
+                        FormattedCharSequence.forward(
+                                I18n.get("tooltip.ronrockets.silo_desc"),
+                                Style.EMPTY
+                        )
                 ),
                 this
         );
