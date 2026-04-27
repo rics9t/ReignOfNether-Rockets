@@ -37,7 +37,7 @@ public class ShieldArrayBuilding extends Building {
 
     @Override
     public Faction getFaction() {
-        return Faction.NONE; // Will be registered to factions manually
+        return Faction.NONE;
     }
 
     @Override
@@ -46,8 +46,7 @@ public class ShieldArrayBuilding extends Building {
         ResourceLocation key = ReignOfNetherRegistries.BUILDING.getKey(this);
 
         String name = I18n.get(
-                "buildings." +
-                        "ronrockets" + "." +
+                "buildings.none." +
                         key.getNamespace() +
                         "." +
                         key.getPath()
@@ -57,14 +56,14 @@ public class ShieldArrayBuilding extends Building {
                 name,
                 this.icon,
                 hotkey,
-                () -> BuildingClientEvents.getBuildingToPlace() == this,
+                () -> BuildingClientEvents.getBuildingToPlace() == RocketBuildings.SHIELD_ARRAY,
                 () -> false,
                 () -> true,
                 List.of(
                         fcs(name, true),
                         ResourceCosts.getFormattedCost(COST),
                         fcs(""),
-                        fcs("Intercept Radius: 64"),
+                        fcs("Radius: 64 blocks"),
                         fcs("Activation Cost: 150 Ore"),
                         fcs("Cooldown: 30s")
                 ),
