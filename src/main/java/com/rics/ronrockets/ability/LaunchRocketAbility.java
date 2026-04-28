@@ -11,14 +11,15 @@ import com.solegendary.reignofnether.hud.AbilityButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.unit.UnitAction;
 
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.level.Level;
 
 import java.util.List;
+
+import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class LaunchRocketAbility extends Ability {
 
@@ -30,19 +31,24 @@ public class LaunchRocketAbility extends Ability {
 
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
+        int storedRockets = placement.getCharges(ProduceRocketAbility.INSTANCE);
+        int maxRockets = ProduceRocketAbility.INSTANCE.maxCharges;
+        String title = I18n.get("abilities.ronrockets.launch_rocket");
+
         return new AbilityButton(
-                "Launch Rocket",
+                title,
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
                 hotkey,
                 () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
                 () -> false,
-                () -> placement.getCharges(ProduceRocketAbility.INSTANCE) > 0,
+                () -> storedRockets > 0,
                 () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
                 null,
                 List.of(
-                        FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
-                        FormattedCharSequence.forward("Stored Rockets: " + placement.getCharges(ProduceRocketAbility.INSTANCE), Style.EMPTY),
-                        FormattedCharSequence.forward("Click target location", Style.EMPTY)
+                        fcs(title, true),
+                        fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip1", storedRockets, maxRockets)),
+                        fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip2")),
+                        fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip3"))
                 ),
                 this,
                 placement

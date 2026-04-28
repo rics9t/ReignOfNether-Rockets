@@ -19,8 +19,9 @@ public class ShieldEnergyManager {
     private static final Map<BlockPos, Integer> energyByOrigin = new HashMap<>();
     private static final int FULL_SYNC_INTERVAL = 20;
 
-    public static final int MAX_ENERGY = 500;
-    public static final int REFILL_PER_TICK = 2;
+    public static final int MAX_ENERGY = 250;
+    public static final int REFILL_PER_TICK = 1;
+    public static final int REFILL_INTERVAL_TICKS = 4;
     public static final int ORE_COST_PER_REFILL = 1;
 
     public static int getEnergy(BuildingPlacement placement) {
@@ -73,6 +74,7 @@ public class ShieldEnergyManager {
             int energy = getEnergy(placement);
 
             if (energy < MAX_ENERGY &&
+                placement.tickAge % REFILL_INTERVAL_TICKS == 0 &&
                 ResourcesServerEvents.canAfford(
                         placement.ownerName,
                         ResourceName.ORE,

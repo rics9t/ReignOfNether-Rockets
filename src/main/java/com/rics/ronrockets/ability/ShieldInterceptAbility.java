@@ -10,6 +10,7 @@ import com.solegendary.reignofnether.hud.AbilityButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.unit.UnitAction;
 
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
@@ -35,8 +36,9 @@ public class ShieldInterceptAbility extends Ability {
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
         int energy = ShieldEnergyManager.getEnergy(placement);
+        String title = I18n.get("abilities.ronrockets.shield_intercept");
         AbilityButton button = new AbilityButton(
-                "Shield Intercept",
+                title,
                 ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "textures/icons/shield_intercept.png"),
                 hotkey,
                 () -> isShieldActive(placement),
@@ -45,12 +47,13 @@ public class ShieldInterceptAbility extends Ability {
                 () -> ShieldActivateServerboundPacket.send(placement.originPos),
                 null,
                 List.of(
-                        fcs("Activate Shield", true),
-                        fcs("Energy: " + energy + "/" + ShieldEnergyManager.getMaxEnergy()),
-                        fcs("Activation Cost: " + ACTIVATION_COST),
-                        fcs("Intercept Radius: " + ShieldArrayBuilding.SHIELD_RADIUS),
-                        fcs("Duration: 10s"),
-                        fcs("Cooldown: 30s")
+                        fcs(title, true),
+                        fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip1", energy, ShieldEnergyManager.getMaxEnergy())),
+                        fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip2", ACTIVATION_COST)),
+                        fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip3", ShieldArrayBuilding.SHIELD_RADIUS)),
+                        fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip4")),
+                        fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip5", 10, 30)),
+                        fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip6", ShieldEnergyManager.REFILL_PER_TICK, ShieldEnergyManager.REFILL_INTERVAL_TICKS))
                 ),
                 this,
                 placement

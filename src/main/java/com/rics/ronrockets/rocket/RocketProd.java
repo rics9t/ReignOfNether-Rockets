@@ -9,11 +9,12 @@ import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
 
-import net.minecraft.network.chat.Style;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
+
+import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class RocketProd extends ProductionItem {
 
@@ -41,17 +42,23 @@ public class RocketProd extends ProductionItem {
 
     @Override
     public StartProductionButton getStartButton(ProductionPlacement prodBuilding, Keybinding hotkey) {
+        int storedRockets = prodBuilding.getCharges(ProduceRocketAbility.INSTANCE);
+        int maxRockets = ProduceRocketAbility.INSTANCE.maxCharges;
+        String title = I18n.get("abilities.ronrockets.produce_rocket");
 
         return new StartProductionButton(
-                "Rocket",
+                title,
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
                 hotkey,
                 () -> false,
-                () -> prodBuilding.getCharges(ProduceRocketAbility.INSTANCE) >= ProduceRocketAbility.INSTANCE.maxCharges,
+                () -> storedRockets < maxRockets,
                 List.of(
-                        FormattedCharSequence.forward("Produce Rocket", Style.EMPTY.withBold(true)),
+                        fcs(title, true),
+                        fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip1", storedRockets, maxRockets)),
                         ResourceCosts.getFormattedCost(COST),
-                        ResourceCosts.getFormattedPopAndTime(COST)
+                        ResourceCosts.getFormattedPopAndTime(COST),
+                        fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip2")),
+                        fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip3", maxRockets))
                 ),
                 this
         );
