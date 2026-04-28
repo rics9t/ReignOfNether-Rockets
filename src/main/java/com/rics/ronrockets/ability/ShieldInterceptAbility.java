@@ -2,13 +2,12 @@ package com.rics.ronrockets.ability;
 
 import com.rics.ronrockets.RonRocketsMod;
 import com.rics.ronrockets.building.ShieldArrayBuilding;
+import com.rics.ronrockets.network.ShieldActivateServerboundPacket;
 import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
-import com.solegendary.reignofnether.hud.HudClientEvents;
 import com.solegendary.reignofnether.hud.AbilityButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
-import com.solegendary.reignofnether.unit.UnitClientEvents;
 import com.solegendary.reignofnether.unit.UnitAction;
 
 import net.minecraft.core.BlockPos;
@@ -30,7 +29,7 @@ public class ShieldInterceptAbility extends Ability {
     private static final int ACTIVATION_COST = 250;
 
     public ShieldInterceptAbility() {
-        super(UnitAction.ACTIVATE_SHIELD_ARRAY, COOLDOWN, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);
+        super(UnitAction.NONE, COOLDOWN, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);
     }
 
     @Override
@@ -43,7 +42,7 @@ public class ShieldInterceptAbility extends Ability {
                 () -> isShieldActive(placement),
                 () -> false,
                 () -> ShieldEnergyManager.getEnergy(placement) >= ACTIVATION_COST && isOffCooldown(placement),
-                () -> UnitClientEvents.sendUnitCommand(this.action),
+                () -> ShieldActivateServerboundPacket.send(placement.originPos),
                 null,
                 List.of(
                         fcs("Activate Shield", true),
@@ -63,18 +62,11 @@ public class ShieldInterceptAbility extends Ability {
 
     @Override
     public void use(Level level, BuildingPlacement buildingUsing, BlockPos bp) {
-        if (ShieldEnergyManager.getEnergy(buildingUsing) < ACTIVATION_COST) {
-            if (level.isClientSide()) {
-                HudClientEvents.showTemporaryMessage("Not enough shield energy");
-            }
+        if (level.isClientSide()) {
             return;
         }
 
-        if (level.isClientSide()) {
-            ShieldEnergyManager.setEnergy(buildingUsing, ShieldEnergyManager.getEnergy(buildingUsing) - ACTIVATION_COST);
-            this.setToMaxCooldown(buildingUsing);
-            buildingUsing.updateButtons();
-            spawnActivationParticles(level, buildingUsing.centrePos);
+        if (ShieldEnergyManager.getEnergy(buildingUsing) < ACTIVATION_COST) {
             return;
         }
 
@@ -83,7 +75,7 @@ public class ShieldInterceptAbility extends Ability {
         }
 
         this.setToMaxCooldown(buildingUsing);
-        ShieldEnergyManager.syncEnergy(buildingUsing);
+        ShieldEnergyManager.syncShieldState(buildingUsing);
         buildingUsing.updateButtons();
         spawnActivationParticles(level, buildingUsing.centrePos);
     }

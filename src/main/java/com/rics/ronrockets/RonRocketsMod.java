@@ -2,6 +2,7 @@ package com.rics.ronrockets;
 
 import com.rics.ronrockets.building.RocketBuildings;
 import com.rics.ronrockets.entity.RocketEntities;
+import com.rics.ronrockets.network.RonRocketsNetwork;
 import com.rics.ronrockets.rocket.RocketProduction;
 import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.rics.ronrockets.shield.ShieldVisualTickHandler;
@@ -20,6 +21,7 @@ public class RonRocketsMod {
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        RonRocketsNetwork.init();
         RocketEntities.register(modBus);
         RocketProduction.init();
         RocketBuildings.register();

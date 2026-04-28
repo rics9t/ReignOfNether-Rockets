@@ -1,8 +1,9 @@
 package com.rics.ronrockets.shield;
 
+import com.rics.ronrockets.ability.ShieldInterceptAbility;
+import com.rics.ronrockets.network.RonRocketsNetwork;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingUtils;
-import com.solegendary.reignofnether.registrars.PacketHandler;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -18,27 +19,36 @@ public class ShieldEnergyClientboundPacket {
 
     private final BlockPos originPos;
     private final int energy;
+    private final float cooldown;
 
-    public ShieldEnergyClientboundPacket(BlockPos originPos, int energy) {
+    public ShieldEnergyClientboundPacket(BlockPos originPos, int energy, float cooldown) {
         this.originPos = originPos;
         this.energy = energy;
+        this.cooldown = cooldown;
     }
 
     public ShieldEnergyClientboundPacket(FriendlyByteBuf buffer) {
         this.originPos = buffer.readBlockPos();
         this.energy = buffer.readInt();
+        this.cooldown = buffer.readFloat();
     }
 
-    public static void syncEnergy(BlockPos originPos, int energy) {
-        PacketHandler.INSTANCE.send(
+    public static void syncShieldState(BuildingPlacement placement) {
+        ShieldInterceptAbility ability = ShieldInterceptAbility.getFrom(placement);
+        RonRocketsNetwork.CHANNEL.send(
                 PacketDistributor.ALL.noArg(),
-                new ShieldEnergyClientboundPacket(originPos, energy)
+                new ShieldEnergyClientboundPacket(
+                        placement.originPos,
+                        ShieldEnergyManager.getEnergy(placement),
+                        ability != null ? placement.getCooldown(ability) : 0
+                )
         );
     }
 
     public void encode(FriendlyByteBuf buffer) {
         buffer.writeBlockPos(this.originPos);
         buffer.writeInt(this.energy);
+        buffer.writeFloat(this.cooldown);
     }
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
@@ -47,6 +57,10 @@ public class ShieldEnergyClientboundPacket {
             ShieldEnergyManager.setEnergy(this.originPos, this.energy);
             BuildingPlacement placement = BuildingUtils.findBuilding(true, this.originPos);
             if (placement != null) {
+                ShieldInterceptAbility ability = ShieldInterceptAbility.getFrom(placement);
+                if (ability != null) {
+                    placement.setCooldown(ability, this.cooldown);
+                }
                 placement.updateButtons();
             }
             success.set(true);

@@ -27,8 +27,6 @@ public enum UnitAction {
     DISABLE_AUTO_FIND_ENEMIES,
 
     ATTACK_GROUND,
-    LAUNCH_ROCKET,
-    ACTIVATE_SHIELD_ARRAY,
     // special abilities - these can also be assigned to cursor actions
     EXPLODE,
     CALL_LIGHTNING, // actually not from a unit, but we'll make an exception

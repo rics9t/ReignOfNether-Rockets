@@ -25,7 +25,7 @@ public class LaunchRocketAbility extends Ability {
     private static final int COOLDOWN = 100;
 
     public LaunchRocketAbility() {
-        super(UnitAction.LAUNCH_ROCKET, COOLDOWN, 9999, 0, false);
+        super(UnitAction.ATTACK_GROUND, COOLDOWN, 9999, 0, false);
     }
 
     @Override
@@ -34,10 +34,10 @@ public class LaunchRocketAbility extends Ability {
                 "Launch Rocket",
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
                 hotkey,
-                () -> CursorClientEvents.getLeftClickAction() == UnitAction.LAUNCH_ROCKET,
+                () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
                 () -> false,
                 () -> placement.getCharges(ProduceRocketAbility.INSTANCE) > 0,
-                () -> CursorClientEvents.setLeftClickAction(UnitAction.LAUNCH_ROCKET),
+                () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
                 null,
                 List.of(
                         FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
