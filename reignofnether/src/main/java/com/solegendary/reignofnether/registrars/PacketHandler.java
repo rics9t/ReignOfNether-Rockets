@@ -1,5 +1,6 @@
 package com.solegendary.reignofnether.registrars;
 
+import com.rics.ronrockets.shield.ShieldEnergyClientboundPacket;
 import com.solegendary.reignofnether.ReignOfNether;
 import com.solegendary.reignofnether.ability.AbilityClientboundPacket;
 import com.solegendary.reignofnether.ability.AbilityServerboundPacket;
@@ -316,6 +317,12 @@ public final class PacketHandler {
                 .encoder(ScenarioClientboundPacket::encode)
                 .decoder(ScenarioClientboundPacket::new)
                 .consumerMainThread(ScenarioClientboundPacket::handle)
+                .add();
+
+        INSTANCE.messageBuilder(ShieldEnergyClientboundPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ShieldEnergyClientboundPacket::encode)
+                .decoder(ShieldEnergyClientboundPacket::new)
+                .consumerMainThread(ShieldEnergyClientboundPacket::handle)
                 .add();
     }
 }

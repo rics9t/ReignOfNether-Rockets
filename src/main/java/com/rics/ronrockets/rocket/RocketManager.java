@@ -1,5 +1,7 @@
 package com.rics.ronrockets.rocket;
 
+import com.rics.ronrockets.ability.ShieldInterceptAbility;
+import com.rics.ronrockets.building.ShieldArrayBuilding;
 import com.solegendary.reignofnether.attackwarnings.AttackWarningClientboundPacket;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
@@ -21,6 +23,19 @@ public final class RocketManager {
 
     public static void resolveStrikeFromEntity(RocketStrike strike, ServerLevel level) {
         int radius = 12;
+
+        for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
+            if (!(placement.getBuilding() instanceof ShieldArrayBuilding)) continue;
+            if (!placement.isBuilt) continue;
+            if (placement.ownerName.equals(strike.attacker)) continue;
+            if (placement.centrePos.distSqr(strike.targetPos) > (double) ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) continue;
+
+            ShieldInterceptAbility shieldAbility = ShieldInterceptAbility.getFrom(placement);
+            if (shieldAbility == null || !shieldAbility.isShieldActive(placement)) continue;
+
+            ShieldInterceptAbility.spawnInterceptParticles(level, placement.centrePos, strike.targetPos);
+            return;
+        }
 
         // Visuals + sound
         level.sendParticles(

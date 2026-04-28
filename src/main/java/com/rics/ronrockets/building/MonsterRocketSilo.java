@@ -6,6 +6,7 @@ import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlaceButton;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.faction.Faction;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.player.PlayerServerEvents;
@@ -63,7 +64,7 @@ public class MonsterRocketSilo extends AbstractRocketSilo {
             }
         }
 
-        BuildingPlacement placement = new BuildingPlacement(
+        BuildingPlacement placement = new ProductionPlacement(
                 this,
                 level,
                 pos,

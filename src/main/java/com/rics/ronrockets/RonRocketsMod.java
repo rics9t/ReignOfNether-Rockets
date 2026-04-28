@@ -1,8 +1,8 @@
 package com.rics.ronrockets;
 
 import com.rics.ronrockets.building.RocketBuildings;
-import com.rics.ronrockets.client.RocketClientEvents;
 import com.rics.ronrockets.entity.RocketEntities;
+import com.rics.ronrockets.rocket.RocketProduction;
 import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.rics.ronrockets.shield.ShieldVisualTickHandler;
 
@@ -21,11 +21,10 @@ public class RonRocketsMod {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         RocketEntities.register(modBus);
+        RocketProduction.init();
         RocketBuildings.register();
 
         MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
         MinecraftForge.EVENT_BUS.register(ShieldVisualTickHandler.class);
-
-        MinecraftForge.EVENT_BUS.register(RocketClientEvents.class);
     }
 }

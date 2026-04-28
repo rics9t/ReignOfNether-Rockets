@@ -30,6 +30,7 @@ public class RocketProd extends ProductionItem {
             if (current < max) {
                 placement.setCharges(ProduceRocketAbility.INSTANCE, current + 1);
             }
+            placement.updateButtons();
         };
     }
 

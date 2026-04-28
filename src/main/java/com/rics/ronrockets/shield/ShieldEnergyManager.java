@@ -7,6 +7,7 @@ import com.solegendary.reignofnether.resources.ResourceName;
 import com.solegendary.reignofnether.resources.Resources;
 import com.solegendary.reignofnether.resources.ResourcesServerEvents;
 
+import net.minecraft.core.BlockPos;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
@@ -15,21 +16,43 @@ import java.util.Map;
 
 public class ShieldEnergyManager {
 
-    private static final int MAX_ENERGY = 500;
-    private static final int REFILL_PER_TICK = 2;
-    private static final int ORE_COST_PER_REFILL = 1;
+    private static final Map<BlockPos, Integer> energyByOrigin = new HashMap<>();
 
-    private static final Map<BuildingPlacement, Integer> energyMap = new HashMap<>();
+    public static final int MAX_ENERGY = 500;
+    public static final int REFILL_PER_TICK = 2;
+    public static final int ORE_COST_PER_REFILL = 1;
 
     public static int getEnergy(BuildingPlacement placement) {
-        return energyMap.getOrDefault(placement, MAX_ENERGY);
+        return getEnergy(placement.originPos);
+    }
+
+    public static int getEnergy(BlockPos originPos) {
+        return energyByOrigin.getOrDefault(originPos, MAX_ENERGY);
+    }
+
+    public static int getMaxEnergy() {
+        return MAX_ENERGY;
+    }
+
+    public static void setEnergy(BuildingPlacement placement, int amount) {
+        setEnergy(placement.originPos, amount);
+    }
+
+    public static void setEnergy(BlockPos originPos, int amount) {
+        energyByOrigin.put(originPos.immutable(), Math.max(0, Math.min(MAX_ENERGY, amount)));
     }
 
     public static boolean consumeEnergy(BuildingPlacement placement, int amount) {
         int current = getEnergy(placement);
-        if (current < amount) return false;
-        energyMap.put(placement, current - amount);
+        if (current < amount) {
+            return false;
+        }
+        setEnergy(placement, current - amount);
         return true;
+    }
+
+    public static void syncEnergy(BuildingPlacement placement) {
+        ShieldEnergyClientboundPacket.syncEnergy(placement.originPos, getEnergy(placement));
     }
 
     @SubscribeEvent
@@ -55,8 +78,8 @@ public class ShieldEnergyManager {
                         new Resources(placement.ownerName, 0, 0, -ORE_COST_PER_REFILL)
                 );
 
-                energyMap.put(placement,
-                        Math.min(MAX_ENERGY, energy + REFILL_PER_TICK));
+                setEnergy(placement, energy + REFILL_PER_TICK);
+                syncEnergy(placement);
             }
         }
     }

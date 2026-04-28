@@ -25,26 +25,23 @@ public class LaunchRocketAbility extends Ability {
     private static final int COOLDOWN = 100;
 
     public LaunchRocketAbility() {
-        super(UnitAction.ATTACK_GROUND, COOLDOWN, 9999, 0, false);
+        super(UnitAction.LAUNCH_ROCKET, COOLDOWN, 9999, 0, false);
     }
 
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
-
-        int rockets = placement.getCharges(ProduceRocketAbility.INSTANCE);
-
         return new AbilityButton(
                 "Launch Rocket",
                 new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
                 hotkey,
-                () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
-                () -> rockets <= 0,
-                () -> true,
-                () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
+                () -> CursorClientEvents.getLeftClickAction() == UnitAction.LAUNCH_ROCKET,
+                () -> false,
+                () -> placement.getCharges(ProduceRocketAbility.INSTANCE) > 0,
+                () -> CursorClientEvents.setLeftClickAction(UnitAction.LAUNCH_ROCKET),
                 null,
                 List.of(
                         FormattedCharSequence.forward("Launch Rocket", Style.EMPTY.withBold(true)),
-                        FormattedCharSequence.forward("Stored Rockets: " + rockets, Style.EMPTY),
+                        FormattedCharSequence.forward("Stored Rockets: " + placement.getCharges(ProduceRocketAbility.INSTANCE), Style.EMPTY),
                         FormattedCharSequence.forward("Click target location", Style.EMPTY)
                 ),
                 this,
@@ -79,5 +76,6 @@ public class LaunchRocketAbility extends Ability {
         // BOTH sides: update UI immediately
         buildingUsing.setCharges(ProduceRocketAbility.INSTANCE, rockets - 1);
         this.setToMaxCooldown(buildingUsing);
+        buildingUsing.updateButtons();
     }
 }

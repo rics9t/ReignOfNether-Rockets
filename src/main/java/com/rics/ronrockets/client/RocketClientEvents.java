@@ -1,15 +1,19 @@
 package com.rics.ronrockets.client;
 
-import com.rics.ronrockets.rocket.RocketStrike;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rics.ronrockets.RonRocketsMod;
+
+@Mod.EventBusSubscriber(modid = RonRocketsMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class RocketClientEvents {
 
     private static final Minecraft MC = Minecraft.getInstance();
