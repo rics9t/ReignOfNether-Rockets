@@ -38,7 +38,7 @@ public class LaunchRocketAbility extends Ability {
 
         return new AbilityButton(
                 title,
-                new ResourceLocation(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
+                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
                 hotkey,
                 () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
                 () -> false,
