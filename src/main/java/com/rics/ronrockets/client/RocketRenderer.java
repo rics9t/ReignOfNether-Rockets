@@ -14,13 +14,17 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
 
     private final RocketModel model;
 
+    // Full-bright light value (15 sky + 15 block = 0xF0F0)
+    private static final int FULL_BRIGHT = 0xF000F0;
+
     public RocketRenderer(EntityRendererProvider.Context context) {
         super(context);
         model = new RocketModel(context.bakeLayer(RocketLayers.ROCKET_LAYER));
     }
 
     @Override
-    public void render(RocketEntity entity, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
+    public void render(RocketEntity entity, float entityYaw, float partialTicks,
+                       PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         poseStack.pushPose();
 
         double vx = entity.getDeltaMovement().x;
@@ -33,17 +37,20 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
         poseStack.mulPose(Axis.YP.rotation(-yaw));
         poseStack.mulPose(Axis.ZP.rotation(pitch));
 
-        var vertex = buffer.getBuffer(net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
+        // Use full-bright so the rocket is always visible, even at night or in shadows
+        var vertex = buffer.getBuffer(
+                net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
 
-        model.renderToBuffer(poseStack, vertex, packedLight, OverlayTexture.NO_OVERLAY, 1f, 1f, 1f, 1f);
+        model.renderToBuffer(poseStack, vertex, FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
+                1f, 1f, 1f, 1f);
+
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
     }
 
-    // ✅ Uses your custom Rocket texture!
     @Override
     public ResourceLocation getTextureLocation(RocketEntity entity) {
-        return new ResourceLocation("ronrockets", "textures/entity/rocket.png");
+        return ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/entity/rocket.png");
     }
 }

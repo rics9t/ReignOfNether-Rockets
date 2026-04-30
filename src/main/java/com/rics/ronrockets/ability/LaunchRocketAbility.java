@@ -4,6 +4,7 @@ import com.rics.ronrockets.RonRocketsMod;
 import com.rics.ronrockets.building.AbstractRocketSilo;
 import com.rics.ronrockets.entity.RocketEntities;
 import com.rics.ronrockets.entity.RocketEntity;
+import com.rics.ronrockets.network.RocketWarningClientboundPacket;
 import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.cursor.CursorClientEvents;
@@ -63,7 +64,7 @@ public class LaunchRocketAbility extends Ability {
         int rockets = buildingUsing.getCharges(ProduceRocketAbility.INSTANCE);
         if (rockets <= 0) return;
 
-        // Server-only: spawn entity + authoritative consume
+        // Server-only: spawn entity, broadcast warning, consume rocket
         if (!level.isClientSide()) {
             ServerLevel serverLevel = (ServerLevel) level;
 
@@ -77,6 +78,9 @@ public class LaunchRocketAbility extends Ability {
             rocket.setAttacker(buildingUsing.ownerName);
 
             serverLevel.addFreshEntity(rocket);
+
+            // Broadcast pre-impact warning to all clients
+            RocketWarningClientboundPacket.send(targetBp, buildingUsing.ownerName);
         }
 
         // BOTH sides: update UI immediately

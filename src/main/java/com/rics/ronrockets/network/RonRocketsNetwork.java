@@ -36,10 +36,22 @@ public final class RonRocketsNetwork {
                 .consumerMainThread(ShieldActivateServerboundPacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(ShieldEnergyClientboundPacket.class, index, NetworkDirection.PLAY_TO_CLIENT)
+        CHANNEL.messageBuilder(ShieldEnergyClientboundPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ShieldEnergyClientboundPacket::encode)
                 .decoder(ShieldEnergyClientboundPacket::new)
                 .consumerMainThread(ShieldEnergyClientboundPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(RocketWarningClientboundPacket.class, index++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RocketWarningClientboundPacket::encode)
+                .decoder(RocketWarningClientboundPacket::new)
+                .consumerMainThread(RocketWarningClientboundPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(ScreenShakeClientboundPacket.class, index, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ScreenShakeClientboundPacket::encode)
+                .decoder(ScreenShakeClientboundPacket::new)
+                .consumerMainThread(ScreenShakeClientboundPacket::handle)
                 .add();
 
         initialised = true;

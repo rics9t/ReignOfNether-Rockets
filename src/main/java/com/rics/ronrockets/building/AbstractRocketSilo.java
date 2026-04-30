@@ -1,10 +1,23 @@
 package com.rics.ronrockets.building;
 
 import com.rics.ronrockets.ability.LaunchRocketAbility;
+import com.rics.ronrockets.ability.ProduceRocketAbility;
 import com.rics.ronrockets.rocket.RocketProduction;
+import com.solegendary.reignofnether.building.BuildingClientEvents;
+import com.solegendary.reignofnether.building.BuildingPlacement;
+import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.building.production.ProductionBuilding;
 import com.solegendary.reignofnether.keybinds.Keybindings;
+import com.solegendary.reignofnether.player.PlayerServerEvents;
 import com.solegendary.reignofnether.resources.ResourceCost;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Rotation;
+
+import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 
 public abstract class AbstractRocketSilo extends ProductionBuilding {
 
@@ -12,11 +25,60 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
         super(structureName, ResourceCost.Building(1000, 800, 600, 0), false);
         this.name = "Rocket Silo";
 
-        // Q = production (now visible again)
+        // Q = production
         this.productions.add(RocketProduction.ROCKET_PROD, Keybindings.keyQ);
 
         // W = launch
         this.abilities.add(new LaunchRocketAbility(), Keybindings.keyW);
+    }
+
+    /**
+     * Checks whether a player already owns a Rocket Silo (built OR under construction).
+     * Shared by all faction silos and the RocketPlacementHandler.
+     */
+    public static boolean playerOwnsSilo(String ownerName, boolean clientSide) {
+        Iterable<BuildingPlacement> buildings = clientSide
+                ? BuildingClientEvents.getBuildings()
+                : BuildingServerEvents.getBuildings();
+        for (BuildingPlacement b : buildings) {
+            if (b.getBuilding() instanceof AbstractRocketSilo && b.ownerName.equals(ownerName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Server-side guard + placement factory.
+     * Returns null (cancels placement) when the player already owns a silo.
+     * Subclasses call this from createBuildingPlacement.
+     */
+    protected BuildingPlacement checkOnePerPlayerAndCreate(Level level, BlockPos pos,
+                                                            Rotation rotation, String ownerName) {
+        if (!level.isClientSide() && playerOwnsSilo(ownerName, false)) {
+            PlayerServerEvents.sendMessageToPlayer(
+                    ownerName, "You already have a Rocket Silo!", true, ownerName
+            );
+            return null;
+        }
+
+        BuildingPlacement placement = new ProductionPlacement(
+                this, level, pos, rotation, ownerName,
+                getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
+                false
+        );
+        placement.setCharges(ProduceRocketAbility.INSTANCE, 0);
+        return placement;
+    }
+
+    /**
+     * Client-side isEnabled supplier for the build button.
+     * Disables the button when the local player already owns a silo.
+     */
+    protected static boolean clientCanPlaceSilo() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return true;
+        return !playerOwnsSilo(mc.player.getName().getString(), true);
     }
 
     @Override

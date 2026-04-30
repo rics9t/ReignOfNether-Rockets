@@ -1,15 +1,11 @@
 package com.rics.ronrockets.building;
 
-import com.rics.ronrockets.ability.ProduceRocketAbility;
 import com.solegendary.reignofnether.api.ReignOfNetherRegistries;
 import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlaceButton;
 import com.solegendary.reignofnether.building.BuildingPlacement;
-import com.solegendary.reignofnether.building.BuildingServerEvents;
-import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.faction.Faction;
 import com.solegendary.reignofnether.keybinds.Keybinding;
-import com.solegendary.reignofnether.player.PlayerServerEvents;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
 
@@ -22,7 +18,6 @@ import net.minecraft.world.level.block.Rotation;
 
 import java.util.List;
 
-import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class VillagerRocketSilo extends AbstractRocketSilo {
@@ -47,36 +42,7 @@ public class VillagerRocketSilo extends AbstractRocketSilo {
 
     @Override
     public BuildingPlacement createBuildingPlacement(Level level, BlockPos pos, Rotation rotation, String ownerName) {
-        if (!level.isClientSide()) {
-            for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
-                if (placement.getBuilding() instanceof AbstractRocketSilo
-                        && placement.ownerName.equals(ownerName)
-                        && placement.isBuilt) {
-
-                    PlayerServerEvents.sendMessageToAllPlayers(
-                            "You already have a Rocket Silo!",
-                            false,
-                            ownerName
-                    );
-
-                    return null;
-                }
-            }
-        }
-
-        BuildingPlacement placement = new ProductionPlacement(
-                this,
-                level,
-                pos,
-                rotation,
-                ownerName,
-                getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
-                false
-        );
-
-        // Critical: start with 0 rockets stored
-        placement.setCharges(ProduceRocketAbility.INSTANCE, 0);
-        return placement;
+        return checkOnePerPlayerAndCreate(level, pos, rotation, ownerName);
     }
 
     @Override
@@ -90,7 +56,7 @@ public class VillagerRocketSilo extends AbstractRocketSilo {
                 hotkey,
                 () -> BuildingClientEvents.getBuildingToPlace() == this,
                 () -> false,
-                () -> true,
+                AbstractRocketSilo::clientCanPlaceSilo,
                 List.of(
                         fcs(name, true),
                         ResourceCosts.getFormattedCost(COST)

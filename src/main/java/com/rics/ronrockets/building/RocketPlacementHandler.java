@@ -8,33 +8,35 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Safety-net handler that removes any duplicate silos that slip through
+ * the createBuildingPlacement guard (e.g. due to race conditions on tick).
+ * The primary restriction is in AbstractRocketSilo.checkOnePerPlayerAndCreate.
+ */
 public class RocketPlacementHandler {
 
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
-
         if (event.phase != TickEvent.Phase.END) return;
 
+        // Count silos per player (built or under construction)
         Map<String, Integer> siloCount = new HashMap<>();
 
         for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
-
-            if (!(placement.getBuilding() instanceof AbstractRocketSilo)) continue;
-            if (!placement.isBuilt) continue;
-
-            siloCount.put(
-                    placement.ownerName,
-                    siloCount.getOrDefault(placement.ownerName, 0) + 1
-            );
+            if (placement.getBuilding() instanceof AbstractRocketSilo) {
+                siloCount.merge(placement.ownerName, 1, Integer::sum);
+            }
         }
 
+        // If any player has more than one, remove the extras (keep the first)
         for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
-
             if (!(placement.getBuilding() instanceof AbstractRocketSilo)) continue;
-            if (!placement.isBuilt) continue;
 
-            if (siloCount.getOrDefault(placement.ownerName, 0) > 1) {
+            int count = siloCount.getOrDefault(placement.ownerName, 0);
+            if (count > 1) {
+                // Remove the duplicate and decrement so only one is removed per extra
                 BuildingServerEvents.cancelBuilding(placement, placement.ownerName);
+                siloCount.put(placement.ownerName, count - 1);
             }
         }
     }
