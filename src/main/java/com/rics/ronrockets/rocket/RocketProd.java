@@ -48,6 +48,10 @@ public class RocketProd extends ProductionItem {
      */
     private static int getTotalRockets(ProductionPlacement placement) {
         int stored = placement.getCharges(ProduceRocketAbility.INSTANCE);
+        // productionQueue is null during BuildingPlacement.<init> (called from super() before field init)
+        if (placement.productionQueue == null) {
+            return stored;
+        }
         int inQueue = 0;
         for (ActiveProduction ap : placement.productionQueue) {
             if (ap.item instanceof RocketProd) {
