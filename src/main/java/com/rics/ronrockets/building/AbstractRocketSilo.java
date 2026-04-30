@@ -1,12 +1,12 @@
 package com.rics.ronrockets.building;
 
+import com.rics.ronrockets.RonRocketsConfig;
 import com.rics.ronrockets.ability.LaunchRocketAbility;
 import com.rics.ronrockets.ability.ProduceRocketAbility;
 import com.rics.ronrockets.rocket.RocketProduction;
 import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
-import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.building.production.ProductionBuilding;
 import com.solegendary.reignofnether.keybinds.Keybindings;
 import com.solegendary.reignofnether.player.PlayerServerEvents;
@@ -16,6 +16,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Rotation;
+
+import java.util.ArrayList;
 
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 
@@ -33,16 +35,19 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
     }
 
     /**
-     * Checks whether a player already owns a Rocket Silo (built OR under construction).
-     * Shared by all faction silos and the RocketPlacementHandler.
+     * Checks whether a player already owns enough Rocket Silos (built OR under construction).
+     * Uses the configurable silo limit from RonRocketsConfig.
      */
     public static boolean playerOwnsSilo(String ownerName, boolean clientSide) {
+        int limit = RonRocketsConfig.getSiloLimit();
+        int count = 0;
         Iterable<BuildingPlacement> buildings = clientSide
                 ? BuildingClientEvents.getBuildings()
                 : BuildingServerEvents.getBuildings();
         for (BuildingPlacement b : buildings) {
             if (b.getBuilding() instanceof AbstractRocketSilo && b.ownerName.equals(ownerName)) {
-                return true;
+                count++;
+                if (count >= limit) return true;
             }
         }
         return false;
@@ -50,8 +55,8 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
 
     /**
      * Server-side guard + placement factory.
-     * Returns null (cancels placement) when the player already owns a silo.
-     * Subclasses call this from createBuildingPlacement.
+     * Returns null when the player has reached the silo limit.
+     * Uses RocketSiloPlacement to enforce the production queue limit.
      */
     protected BuildingPlacement checkOnePerPlayerAndCreate(Level level, BlockPos pos,
                                                             Rotation rotation, String ownerName) {
@@ -62,7 +67,7 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
             return null;
         }
 
-        BuildingPlacement placement = new ProductionPlacement(
+        RocketSiloPlacement placement = new RocketSiloPlacement(
                 this, level, pos, rotation, ownerName,
                 getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
                 false
@@ -73,7 +78,7 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
 
     /**
      * Client-side isEnabled supplier for the build button.
-     * Disables the button when the local player already owns a silo.
+     * Disables the button when the local player has reached the silo limit.
      */
     protected static boolean clientCanPlaceSilo() {
         Minecraft mc = Minecraft.getInstance();

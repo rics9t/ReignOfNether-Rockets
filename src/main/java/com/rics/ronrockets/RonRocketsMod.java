@@ -10,7 +10,9 @@ import com.rics.ronrockets.shield.ShieldVisualTickHandler;
 
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(RonRocketsMod.MODID)
@@ -21,6 +23,9 @@ public class RonRocketsMod {
     public RonRocketsMod() {
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+
+        // Register config (server-side — synced to clients automatically)
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, RonRocketsConfig.SPEC);
 
         RonRocketsNetwork.init();
         RocketEntities.register(modBus);

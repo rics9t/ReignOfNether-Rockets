@@ -7,7 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -22,34 +21,40 @@ public class RocketClientEvents {
 
     private static final Minecraft MC = Minecraft.getInstance();
 
-    // ── Incoming rocket warnings ──────────────────────────────────
-    private static final List<IncomingWarning> INCOMING_WARNINGS = new ArrayList<>();
+    // ── Incoming warnings (enemy rockets targeting this player) ──
+    private static final List<RocketMarker> INCOMING = new ArrayList<>();
+    private static final int INCOMING_DURATION = 20 * 8;
 
-    private static final int WARNING_DURATION_TICKS = 20 * 8; // 8 seconds
+    // ── Outgoing markers (this player's launched rockets) ────────
+    private static final List<RocketMarker> OUTGOING = new ArrayList<>();
+    private static final int OUTGOING_DURATION = 20 * 10;
 
     /**
      * Called when the server broadcasts that a rocket has been launched.
-     * Only shows the warning to players who are NOT the attacker.
+     * Adds to INCOMING for non-attackers, and to OUTGOING for the attacker.
      */
     public static void onRocketWarningReceived(BlockPos targetPos, String attackerName) {
         LocalPlayer player = MC.player;
         if (player == null) return;
-        if (player.getName().getString().equals(attackerName)) return; // don't warn the attacker
 
-        // Play an alarm sound at the player's position
-        MC.level.playSound(player, player.blockPosition(), SoundEvents.BELL_RESONATE,
-                SoundSource.HOSTILE, 1.0f, 0.6f);
+        boolean isAttacker = player.getName().getString().equals(attackerName);
 
-        INCOMING_WARNINGS.add(new IncomingWarning(targetPos, WARNING_DURATION_TICKS));
+        if (isAttacker) {
+            // Attacker sees their own target as a friendly marker
+            OUTGOING.add(new RocketMarker(targetPos, OUTGOING_DURATION));
+        } else {
+            // Non-attacker gets an alarm + incoming warning
+            MC.level.playSound(player, player.blockPosition(), SoundEvents.BELL_RESONATE,
+                    SoundSource.HOSTILE, 1.0f, 0.6f);
+            INCOMING.add(new RocketMarker(targetPos, INCOMING_DURATION));
+        }
     }
 
     // ── Screen shake ──────────────────────────────────────────────
     private static int shakeTicksRemaining = 0;
     private static float shakeIntensity = 0;
-    private static BlockPos shakeCenter = null;
 
     public static void onScreenShake(BlockPos impactPos, float intensity, int durationTicks) {
-        // Intensity falls off with distance so far-away players aren't shaken hard
         LocalPlayer player = MC.player;
         if (player != null) {
             double dist = player.distanceToSqr(
@@ -57,7 +62,6 @@ public class RocketClientEvents {
             double falloff = Math.max(0, 1.0 - Math.sqrt(dist) / 200.0);
             intensity *= falloff;
         }
-        shakeCenter = impactPos;
         shakeTicksRemaining = durationTicks;
         shakeIntensity = intensity;
     }
@@ -78,65 +82,53 @@ public class RocketClientEvents {
         if (MC.level == null) return;
 
         // ── Tick incoming warnings ──
-        Iterator<IncomingWarning> it = INCOMING_WARNINGS.iterator();
+        Iterator<RocketMarker> it = INCOMING.iterator();
         while (it.hasNext()) {
-            IncomingWarning w = it.next();
+            RocketMarker w = it.next();
             w.ticksRemaining--;
 
-            // Blinking red smoke at target
-            if (w.ticksRemaining % 3 == 0) {
+            // Signal smoke at target
+            if (w.ticksRemaining % 4 == 0) {
                 MC.level.addParticle(
                         ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,
-                        w.target.getX() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 3,
-                        w.target.getY() + 8,
-                        w.target.getZ() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 3,
-                        0, -0.15, 0
+                        w.target.getX() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 2,
+                        w.target.getY() + 6,
+                        w.target.getZ() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 2,
+                        0, -0.1, 0
                 );
             }
 
-            // Falling danger particles closer to impact
-            if (w.ticksRemaining < 60 && w.ticksRemaining % 2 == 0) {
-                double dx = (MC.level.random.nextDouble() - 0.5) * 1.5;
-                double dz = (MC.level.random.nextDouble() - 0.5) * 1.5;
-                MC.level.addParticle(
-                        ParticleTypes.FLAME,
-                        w.target.getX() + 0.5 + dx,
-                        w.target.getY() + 15 + MC.level.random.nextDouble() * 10,
-                        w.target.getZ() + 0.5 + dz,
-                        0, -0.4, 0
-                );
-            }
+            if (w.ticksRemaining <= 0) it.remove();
+        }
 
-            if (w.ticksRemaining <= 0) {
-                it.remove();
-            }
+        // ── Tick outgoing markers ──
+        Iterator<RocketMarker> it2 = OUTGOING.iterator();
+        while (it2.hasNext()) {
+            RocketMarker m = it2.next();
+            m.ticksRemaining--;
+            if (m.ticksRemaining <= 0) it2.remove();
         }
 
         // ── Tick screen shake ──
         if (shakeTicksRemaining > 0) {
             shakeTicksRemaining--;
-            // Ease out
             if (shakeTicksRemaining < 10) {
                 shakeIntensity *= 0.85f;
             }
         }
     }
 
-    // ── Expose for HUD rendering ──────────────────────────────────
-    public static List<IncomingWarning> getIncomingWarnings() {
-        return INCOMING_WARNINGS;
-    }
+    // ── Expose for rendering ──────────────────────────────────────
+    public static List<RocketMarker> getIncomingWarnings() { return INCOMING; }
+    public static List<RocketMarker> getOutgoingMarkers()  { return OUTGOING; }
+    public static boolean isScreenShaking() { return shakeTicksRemaining > 0; }
 
-    public static boolean isScreenShaking() {
-        return shakeTicksRemaining > 0;
-    }
-
-    // ── Inner data class ──────────────────────────────────────────
-    public static class IncomingWarning {
+    // ── Marker data class ─────────────────────────────────────────
+    public static class RocketMarker {
         public final BlockPos target;
         public int ticksRemaining;
 
-        IncomingWarning(BlockPos target, int ticksRemaining) {
+        RocketMarker(BlockPos target, int ticksRemaining) {
             this.target = target;
             this.ticksRemaining = ticksRemaining;
         }

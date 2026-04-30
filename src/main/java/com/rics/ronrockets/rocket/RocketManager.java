@@ -37,67 +37,36 @@ public final class RocketManager {
             if (shieldAbility == null || !shieldAbility.isShieldActive(placement)) continue;
 
             ShieldInterceptAbility.spawnInterceptParticles(level, placement.centrePos, strike.targetPos);
-            return; // rocket absorbed — skip damage and explosion
+            return;
         }
 
         double cx = strike.targetPos.getX() + 0.5;
         double cy = strike.targetPos.getY() + 0.5;
         double cz = strike.targetPos.getZ() + 0.5;
 
-        // ── Stage 1: Flash / initial burst ────────────────────────
-        // Bright flash at impact center
-        level.sendParticles(ParticleTypes.FLASH, cx, cy, cz,
+        // ── TNT-like explosion ────────────────────────────────────
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, cx, cy, cz,
                 1, 0, 0, 0, 0);
 
-        // ── Stage 2: Shockwave ring ───────────────────────────────
-        // EXPLOSION_EMITTER creates the expanding ring effect
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, cx, cy, cz,
-                3, 0.5, 0.5, 0.5, 0);
+        // ── Shockwave — expanding smoke ring at ground level ──────
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, cy - 0.5, cz,
+                40, 6.0, 0.3, 6.0, 0.04);
 
-        // ── Stage 3: Core explosion ───────────────────────────────
-        level.sendParticles(ParticleTypes.EXPLOSION, cx, cy + 0.5, cz,
-                5, 1.0, 1.0, 1.0, 0.02);
+        // ── Lingering smoke cloud ─────────────────────────────────
+        level.sendParticles(ParticleTypes.LARGE_SMOKE, cx, cy + 1, cz,
+                30, 3.0, 2.0, 3.0, 0.05);
 
-        // ── Stage 4: Smoke cloud ──────────────────────────────────
-        // Dense campfire smoke for lingering cloud
-        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, cy, cz,
-                180, 4.0, 3.0, 4.0, 0.08);
-
-        // Lighter large smoke for volume
-        level.sendParticles(ParticleTypes.LARGE_SMOKE, cx, cy, cz,
-                100, 5.0, 4.0, 5.0, 0.05);
-
-        // ── Stage 5: Fire & debris ────────────────────────────────
-        // Lava particles for burning debris
-        level.sendParticles(ParticleTypes.LAVA, cx, cy + 1, cz,
-                40, 3.0, 2.0, 3.0, 0.5);
-
-        // Flame burst
-        level.sendParticles(ParticleTypes.FLAME, cx, cy + 0.5, cz,
-                80, 3.0, 2.0, 3.0, 0.3);
-
-        // Ember sparks flying outward
-        level.sendParticles(ParticleTypes.FLAME, cx, cy + 1, cz,
-                30, 6.0, 4.0, 6.0, 0.8);
-
-        // ── Stage 6: Ground-level dust ring ───────────────────────
-        level.sendParticles(ParticleTypes.CLOUD, cx, cy - 0.5, cz,
-                60, 6.0, 0.2, 6.0, 0.04);
-
-        // ── Sound ─────────────────────────────────────────────────
+        // ── Sound — single deep boom ──────────────────────────────
         level.playSound(null, cx, cy, cz,
-                SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 6.0f, 0.8f);
-        // Secondary deeper boom
-        level.playSound(null, cx, cy, cz,
-                SoundEvents.LIGHTNING_BOLT_THUNDER, SoundSource.MASTER, 3.0f, 0.4f);
+                SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 6.0f, 0.7f);
 
         // ── Screen shake ──────────────────────────────────────────
-        ScreenShakeClientboundPacket.send(strike.targetPos, 6.0f, 30);
+        ScreenShakeClientboundPacket.send(strike.targetPos, 5.0f, 25);
 
         // ── Attack warnings for owners near impact ────────────────
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
-            if (building.ownerName.equals(strike.attacker)) continue; // skip attacker
+            if (building.ownerName.equals(strike.attacker)) continue;
             if (building.centrePos.distSqr(strike.targetPos) <= (double) radius * radius) {
                 AttackWarningClientboundPacket.sendWarning(building.ownerName, strike.targetPos);
             }

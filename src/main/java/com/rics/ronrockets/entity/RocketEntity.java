@@ -1,5 +1,6 @@
 package com.rics.ronrockets.entity;
 
+import com.rics.ronrockets.RonRocketsConfig;
 import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.rocket.RocketStrike;
 
@@ -16,7 +17,6 @@ import net.minecraftforge.network.NetworkHooks;
 
 public class RocketEntity extends Entity {
 
-    private static final double BLOCKS_PER_TICK = 0.55;
     private static final double MAX_ARC_HEIGHT = 55.0;
 
     private BlockPos target;
@@ -41,12 +41,18 @@ public class RocketEntity extends Entity {
         this.attacker = attacker;
     }
 
-    /**
-     * Returns the flight progress 0..1
-     */
+    /** Flight progress 0..1 */
     public float getFlightProgress() {
         if (maxFlightTicks == 0) return 0;
         return (float) flightTicks / maxFlightTicks;
+    }
+
+    public BlockPos getTarget() {
+        return target;
+    }
+
+    public String getAttackerName() {
+        return attacker == null ? "" : attacker;
     }
 
     @Override
@@ -79,7 +85,9 @@ public class RocketEntity extends Entity {
             double dz = endZ - startZ;
             double dist = Math.sqrt(dx * dx + dz * dz);
 
-            maxFlightTicks = Math.max(40, (int) Math.ceil(dist / BLOCKS_PER_TICK));
+            // Speed from config (default ~1.4, roughly 2.5x the original 0.55)
+            double speed = RonRocketsConfig.getRocketSpeed();
+            maxFlightTicks = Math.max(20, (int) Math.ceil(dist / speed));
 
             double tCtrl = 0.30;
             ctrlX = startX + dx * tCtrl;
@@ -93,7 +101,7 @@ public class RocketEntity extends Entity {
         if (flightTicks >= maxFlightTicks) {
             RocketManager.resolveStrikeFromEntity(
                     new RocketStrike(
-                            attacker == null ? "" : attacker,
+                            getAttackerName(),
                             BlockPos.containing(startX, startY, startZ),
                             target,
                             serverLevel.getGameTime()
@@ -121,13 +129,8 @@ public class RocketEntity extends Entity {
     }
 
     /**
-     * Multi-layered client-side trail:
-     *   1. Hot flame core right at the nozzle
-     *   2. Dense smoke plume behind the rocket
-     *   3. Spark shower for ignition feel
-     *   4. Fading contrail of light smoke
-     * Particle counts are kept low for performance; distance culling is implicit
-     * since Minecraft won't render particles beyond 256 blocks.
+     * Simplified trail — smoke only, with random scatter and slight drift.
+     * Keeps performance light: ~3 particles per tick max.
      */
     private void spawnTrailParticles() {
         Level lvl = level();
@@ -136,61 +139,27 @@ public class RocketEntity extends Entity {
         double z = getZ();
         boolean descending = getDeltaMovement().y < 0;
 
-        // 1. Flame core — bright fire right at the engine
-        for (int i = 0; i < 3; i++) {
-            lvl.addParticle(ParticleTypes.FLAME,
-                    x + (random.nextDouble() - 0.5) * 0.3,
-                    y - 0.5,
-                    z + (random.nextDouble() - 0.5) * 0.3,
-                    (random.nextDouble() - 0.5) * 0.05,
-                    descending ? 0.15 : -0.1,
-                    (random.nextDouble() - 0.5) * 0.05
-            );
-        }
-
-        // 2. Dense smoke plume — campfire smoke drifting behind
+        // Primary smoke — campfire smoke with random scatter and drift
+        double scatter = 0.5;
+        double driftY = descending ? 0.06 : -0.06;
         lvl.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE,
-                x + (random.nextDouble() - 0.5) * 0.4,
-                y - 0.8,
-                z + (random.nextDouble() - 0.5) * 0.4,
-                (random.nextDouble() - 0.5) * 0.06,
-                descending ? 0.08 : -0.06,
-                (random.nextDouble() - 0.5) * 0.06
+                x + (random.nextDouble() - 0.5) * scatter,
+                y - 0.6,
+                z + (random.nextDouble() - 0.5) * scatter,
+                (random.nextDouble() - 0.5) * 0.08,
+                driftY + (random.nextDouble() - 0.5) * 0.02,
+                (random.nextDouble() - 0.5) * 0.08
         );
 
-        // Large smoke for volume (every other tick)
+        // Larger lingering smoke every other tick for volume
         if (tickCount % 2 == 0) {
             lvl.addParticle(ParticleTypes.LARGE_SMOKE,
-                    x + (random.nextDouble() - 0.5) * 0.5,
+                    x + (random.nextDouble() - 0.5) * scatter * 1.2,
                     y - 1.0,
-                    z + (random.nextDouble() - 0.5) * 0.5,
+                    z + (random.nextDouble() - 0.5) * scatter * 1.2,
                     (random.nextDouble() - 0.5) * 0.04,
-                    descending ? 0.06 : -0.04,
+                    driftY * 0.6,
                     (random.nextDouble() - 0.5) * 0.04
-            );
-        }
-
-        // 3. Sparks — small embers shooting out
-        if (random.nextInt(3) == 0) {
-            for (int i = 0; i < 2; i++) {
-                lvl.addParticle(ParticleTypes.LAVA,
-                        x + (random.nextDouble() - 0.5) * 0.4,
-                        y - 0.3,
-                        z + (random.nextDouble() - 0.5) * 0.4,
-                        (random.nextDouble() - 0.5) * 0.15,
-                        descending ? 0.2 + random.nextDouble() * 0.1 : -0.15 - random.nextDouble() * 0.1,
-                        (random.nextDouble() - 0.5) * 0.15
-                );
-            }
-        }
-
-        // 4. Contrail — faint lingering smoke trail (every 4 ticks to save particles)
-        if (tickCount % 4 == 0) {
-            lvl.addParticle(ParticleTypes.CLOUD,
-                    x,
-                    y - 1.5,
-                    z,
-                    0, 0.01, 0
             );
         }
     }
