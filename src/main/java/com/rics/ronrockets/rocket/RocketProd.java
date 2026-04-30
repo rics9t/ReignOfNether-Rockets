@@ -1,6 +1,7 @@
 package com.rics.ronrockets.rocket;
 
 import com.rics.ronrockets.ability.ProduceRocketAbility;
+import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.building.production.ActiveProduction;
 import com.solegendary.reignofnether.building.production.ProductionItem;
@@ -9,9 +10,12 @@ import com.solegendary.reignofnether.building.production.StopProductionButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
+import com.solegendary.reignofnether.resources.ResourcesServerEvents;
 
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 
 import java.util.List;
 
@@ -36,7 +40,6 @@ public class RocketProd extends ProductionItem {
 
     /**
      * Counts how many rockets are stored + currently in the production queue.
-     * This prevents players from wasting resources by over-queuing.
      */
     private static int getTotalRockets(ProductionPlacement placement) {
         int stored = placement.getCharges(ProduceRocketAbility.INSTANCE);
@@ -47,6 +50,26 @@ public class RocketProd extends ProductionItem {
             }
         }
         return stored + inQueue;
+    }
+
+    /**
+     * Server-side guard: treat the rocket as unaffordable when
+     * stored + in-queue already equals the max limit.
+     * This prevents the server from accepting over-queued productions.
+     */
+    @Override
+    public boolean canAfford(Level level, String ownerName) {
+        if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
+            for (BuildingPlacement b : com.solegendary.reignofnether.building.BuildingServerEvents.getBuildings()) {
+                if (b instanceof ProductionPlacement pp && b.ownerName.equals(ownerName)
+                        && b.getBuilding() instanceof com.rics.ronrockets.building.AbstractRocketSilo) {
+                    if (getTotalRockets(pp) >= ProduceRocketAbility.getMaxRockets()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return super.canAfford(level, ownerName);
     }
 
     @Override
@@ -61,7 +84,7 @@ public class RocketProd extends ProductionItem {
         int totalRockets = getTotalRockets(prodBuilding);
         String title = I18n.get("abilities.ronrockets.produce_rocket");
 
-        // Disable button when total (stored + in queue) would exceed the limit
+        // Gray out button when total (stored + in queue) would exceed the limit
         boolean canQueue = totalRockets < maxRockets;
 
         return new StartProductionButton(

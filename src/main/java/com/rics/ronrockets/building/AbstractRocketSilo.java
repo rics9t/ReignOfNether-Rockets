@@ -6,6 +6,7 @@ import com.rics.ronrockets.rocket.RocketProduction;
 import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.building.production.ProductionBuilding;
 import com.solegendary.reignofnether.keybinds.Keybindings;
 import com.solegendary.reignofnether.player.PlayerServerEvents;
@@ -61,7 +62,7 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
             return null;
         }
 
-        RocketSiloPlacement placement = new RocketSiloPlacement(
+        BuildingPlacement placement = new com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement(
                 this, level, pos, rotation, ownerName,
                 getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
                 false
