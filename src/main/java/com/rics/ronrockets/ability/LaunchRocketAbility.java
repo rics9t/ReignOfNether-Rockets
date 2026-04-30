@@ -33,7 +33,12 @@ public class LaunchRocketAbility extends Ability {
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
         int storedRockets = placement.getCharges(ProduceRocketAbility.INSTANCE);
-        int maxRockets = ProduceRocketAbility.getMaxRockets();
+        int maxRockets;
+        try {
+            maxRockets = ProduceRocketAbility.getMaxRockets();
+        } catch (Exception e) {
+            maxRockets = 2;
+        }
         String title = I18n.get("abilities.ronrockets.launch_rocket");
 
         return new AbilityButton(

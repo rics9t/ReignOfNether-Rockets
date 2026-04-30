@@ -17,11 +17,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 
 import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class RocketProd extends ProductionItem {
+
+    private static final Logger LOG = LogManager.getLogger("RonRockets");
 
     public static final ResourceCost COST = ResourceCost.Unit(0, 500, 1000, 120, 0);
 
@@ -79,42 +84,46 @@ public class RocketProd extends ProductionItem {
 
     @Override
     public StartProductionButton getStartButton(ProductionPlacement prodBuilding, Keybinding hotkey) {
-        int storedRockets = prodBuilding.getCharges(ProduceRocketAbility.INSTANCE);
-        int maxRockets = ProduceRocketAbility.getMaxRockets();
-        int totalRockets = getTotalRockets(prodBuilding);
-        String title = I18n.get("abilities.ronrockets.produce_rocket");
+        try {
+            int storedRockets = prodBuilding.getCharges(ProduceRocketAbility.INSTANCE);
+            int maxRockets = ProduceRocketAbility.getMaxRockets();
+            int totalRockets = getTotalRockets(prodBuilding);
+            String title = I18n.get("abilities.ronrockets.produce_rocket");
 
-        // Gray out button when total (stored + in queue) would exceed the limit
-        boolean canQueue = totalRockets < maxRockets;
+            boolean canQueue = totalRockets < maxRockets;
 
-        return new StartProductionButton(
+            return new StartProductionButton(
                 title,
                 ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
                 hotkey,
                 () -> false,
                 () -> canQueue,
                 List.of(
-                        fcs(title, true),
-                        fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip1", storedRockets, maxRockets)),
-                        ResourceCosts.getFormattedCost(COST),
-                        ResourceCosts.getFormattedPopAndTime(COST),
-                        canQueue
-                                ? fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip2"))
-                                : fcs(I18n.get("abilities.ronrockets.produce_rocket.queue_full")),
-                        fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip3", maxRockets))
+                    fcs(title, true),
+                    fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip1", storedRockets, maxRockets)),
+                    ResourceCosts.getFormattedCost(COST),
+                    ResourceCosts.getFormattedPopAndTime(COST),
+                    canQueue
+                        ? fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip2"))
+                        : fcs(I18n.get("abilities.ronrockets.produce_rocket.queue_full")),
+                    fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip3", maxRockets))
                 ),
                 this
-        );
+            );
+        } catch (Exception e) {
+            LOG.error("RocketProd.getStartButton() FAILED!", e);
+            throw e;
+        }
     }
 
     @Override
     public StopProductionButton getCancelButton(ProductionPlacement prodBuilding, boolean first) {
         return new StopProductionButton(
-                "Rocket",
-                ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
-                prodBuilding,
-                this,
-                first
+            "Rocket",
+            ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
+            prodBuilding,
+            this,
+            first
         );
     }
 }

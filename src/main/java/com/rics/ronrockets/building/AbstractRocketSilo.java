@@ -17,9 +17,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Rotation;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 
 public abstract class AbstractRocketSilo extends ProductionBuilding {
+
+    private static final Logger LOG = LogManager.getLogger("RonRockets");
 
     public AbstractRocketSilo(String structureName) {
         super(structureName, ResourceCost.Building(1000, 800, 600, 0), false);
@@ -38,8 +43,8 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
      */
     public static boolean playerOwnsSilo(String ownerName, boolean clientSide) {
         Iterable<BuildingPlacement> buildings = clientSide
-                ? BuildingClientEvents.getBuildings()
-                : BuildingServerEvents.getBuildings();
+            ? BuildingClientEvents.getBuildings()
+            : BuildingServerEvents.getBuildings();
         for (BuildingPlacement b : buildings) {
             if (b.getBuilding() instanceof AbstractRocketSilo && b.ownerName.equals(ownerName)) {
                 return true;
@@ -54,21 +59,31 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
      * Subclasses call this from createBuildingPlacement.
      */
     protected BuildingPlacement checkOnePerPlayerAndCreate(Level level, BlockPos pos,
-                                                            Rotation rotation, String ownerName) {
-        if (!level.isClientSide() && playerOwnsSilo(ownerName, false)) {
+            Rotation rotation, String ownerName) {
+        boolean isClient = level.isClientSide();
+        LOG.info("checkOnePerPlayerAndCreate called: clientSide={}, owner={}, pos={}", isClient, ownerName, pos);
+
+        if (!isClient && playerOwnsSilo(ownerName, false)) {
             PlayerServerEvents.sendMessageToPlayer(
-                    ownerName, "You already have a Rocket Silo!", true, ownerName
+                ownerName, "You already have a Rocket Silo!", true, ownerName
             );
+            LOG.info("Rejected: player already owns a silo (server-side)");
             return null;
         }
 
-        BuildingPlacement placement = new com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement(
+        try {
+            BuildingPlacement placement = new com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement(
                 this, level, pos, rotation, ownerName,
                 getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
                 false
-        );
-        placement.setCharges(ProduceRocketAbility.INSTANCE, 0);
-        return placement;
+            );
+            placement.setCharges(ProduceRocketAbility.INSTANCE, 0);
+            LOG.info("Successfully created ProductionPlacement on {} side", isClient ? "client" : "server");
+            return placement;
+        } catch (Exception e) {
+            LOG.error("FAILED to create ProductionPlacement on {} side!", isClient ? "client" : "server", e);
+            return null;
+        }
     }
 
     /**

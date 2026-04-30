@@ -15,25 +15,59 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 @Mod(RonRocketsMod.MODID)
 public class RonRocketsMod {
 
     public static final String MODID = "ronrockets";
+    private static final Logger LOG = LogManager.getLogger("RonRockets");
 
     public RonRocketsMod() {
+        LOG.info("RonRocketsMod constructor starting...");
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // Register config (server-side — synced to clients automatically)
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RonRocketsConfig.SPEC);
+        try {
+            ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RonRocketsConfig.SPEC);
+            LOG.info("Config registered OK");
+        } catch (Exception e) {
+            LOG.error("FAILED to register config!", e);
+        }
 
-        RonRocketsNetwork.init();
-        RocketEntities.register(modBus);
-        RocketProduction.init();
-        RocketBuildings.register();
+        try {
+            RonRocketsNetwork.init();
+            LOG.info("Network init OK");
+        } catch (Exception e) {
+            LOG.error("FAILED to init network!", e);
+        }
+
+        try {
+            RocketEntities.register(modBus);
+            LOG.info("Entities registered OK");
+        } catch (Exception e) {
+            LOG.error("FAILED to register entities!", e);
+        }
+
+        try {
+            RocketProduction.init();
+            LOG.info("RocketProduction init OK");
+        } catch (Exception e) {
+            LOG.error("FAILED to init RocketProduction!", e);
+        }
+
+        try {
+            RocketBuildings.register();
+            LOG.info("Buildings registered OK");
+        } catch (Exception e) {
+            LOG.error("FAILED to register buildings!", e);
+        }
 
         MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
         MinecraftForge.EVENT_BUS.register(ShieldVisualTickHandler.class);
         MinecraftForge.EVENT_BUS.register(RocketPlacementHandler.class);
+
+        LOG.info("RonRocketsMod constructor finished successfully");
     }
 }
