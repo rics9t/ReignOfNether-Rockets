@@ -25,7 +25,7 @@ public class RonRocketsMod {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         // Register config (server-side — synced to clients automatically)
-        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, RonRocketsConfig.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RonRocketsConfig.SPEC);
 
         RonRocketsNetwork.init();
         RocketEntities.register(modBus);

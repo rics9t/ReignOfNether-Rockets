@@ -1,6 +1,5 @@
 package com.rics.ronrockets.building;
 
-import com.rics.ronrockets.RonRocketsConfig;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
 import net.minecraftforge.event.TickEvent;
@@ -10,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Safety-net handler that removes excess silos that slip through
+ * Safety-net handler that removes any duplicate silos that slip through
  * the createBuildingPlacement guard (e.g. due to race conditions on tick).
  * The primary restriction is in AbstractRocketSilo.checkOnePerPlayerAndCreate.
  */
@@ -19,8 +18,6 @@ public class RocketPlacementHandler {
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-
-        int limit = RonRocketsConfig.getSiloLimit();
 
         // Count silos per player (built or under construction)
         Map<String, Integer> siloCount = new HashMap<>();
@@ -31,12 +28,12 @@ public class RocketPlacementHandler {
             }
         }
 
-        // If any player exceeds the limit, remove the extras
+        // If any player has more than one, remove the extras (keep the first)
         for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
             if (!(placement.getBuilding() instanceof AbstractRocketSilo)) continue;
 
             int count = siloCount.getOrDefault(placement.ownerName, 0);
-            if (count > limit) {
+            if (count > 1) {
                 BuildingServerEvents.cancelBuilding(placement, placement.ownerName);
                 siloCount.put(placement.ownerName, count - 1);
             }

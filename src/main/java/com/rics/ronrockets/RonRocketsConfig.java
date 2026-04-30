@@ -3,7 +3,7 @@ package com.rics.ronrockets;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 /**
- * Simple server-side config for the RonRockets addon.
+ * Common config for the RonRockets addon (available on both client and server).
  * Values are synced automatically by Forge on world load.
  * Keep this minimal — only truly tunable parameters belong here.
  */
