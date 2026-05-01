@@ -17,6 +17,8 @@ public class RonRocketsConfig {
     public static final ForgeConfigSpec.DoubleValue SHIELD_DAMAGE_FRACTION;
     public static final ForgeConfigSpec.DoubleValue SHIELD_REPAIR_SPEED_MULT;
     public static final ForgeConfigSpec.DoubleValue SHIELD_ACTIVE_DURATION_SEC;
+    public static final ForgeConfigSpec.DoubleValue SHIELD_IRON_COST;
+    public static final ForgeConfigSpec.IntValue SHIELD_COOLDOWN_SEC;
 
     // Rocket settings
     public static final ForgeConfigSpec.DoubleValue ROCKET_SPEED;
@@ -37,6 +39,12 @@ public class RonRocketsConfig {
         SHIELD_ACTIVE_DURATION_SEC = builder
             .comment("Duration shield stays active after use (seconds). Default 5.")
             .defineInRange("shieldActiveDurationSec", 5.0, 1.0, 30.0);
+        SHIELD_IRON_COST = builder
+            .comment("Iron cost per shield use. Default 50.")
+            .defineInRange("shieldIronCost", 50.0, 0.0, 500.0);
+        SHIELD_COOLDOWN_SEC = builder
+            .comment("Cooldown between shield uses (seconds). Default 60.")
+            .defineInRange("shieldCooldownSec", 60, 0, 300);
         builder.pop();
 
         builder.push("rocket");
@@ -70,6 +78,16 @@ public class RonRocketsConfig {
     public static int getShieldActiveDurationTicks() {
         try { return (int) (SHIELD_ACTIVE_DURATION_SEC.get().doubleValue() * 20); }
         catch (Exception e) { LOG.warn("Config not loaded, using default shieldActiveDurationSec=5", e); return 100; }
+    }
+
+    public static double getShieldIronCost() {
+        try { return SHIELD_IRON_COST.get(); }
+        catch (Exception e) { LOG.warn("Config not loaded, using default shieldIronCost=50", e); return 50.0; }
+    }
+
+    public static int getShieldCooldownSec() {
+        try { return SHIELD_COOLDOWN_SEC.get(); }
+        catch (Exception e) { LOG.warn("Config not loaded, using default shieldCooldownSec=60", e); return 60; }
     }
 
     // Rocket accessors

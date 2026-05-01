@@ -10,6 +10,7 @@
   "abilities.ronrockets.shield_intercept.tooltip_damaged": "Must be fully repaired before activating!",
   "abilities.ronrockets.shield_intercept.tooltip3": "Intercept radius: %s blocks",
   "abilities.ronrockets.shield_intercept.tooltip5": "Active for %s sec. Detonates rockets in range. Destroys 45%% of building on use.",
+"abilities.ronrockets.shield_intercept.tooltip6": "Iron cost: %s | Cooldown: %s sec",
 
   "abilities.ronrockets.produce_rocket": "Produce Rocket",
   "abilities.ronrockets.produce_rocket.tooltip1": "Stored rockets: %s/%s",
