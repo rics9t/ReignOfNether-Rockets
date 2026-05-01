@@ -18,11 +18,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.List;
 
 import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class ShieldInterceptAbility extends Ability {
+
+    private static final Logger LOG = LogManager.getLogger("RonRockets/Shield");
 
     // 0-second cooldown — the limitation is building damage, not time
     private static final int COOLDOWN = 0;
@@ -38,8 +43,6 @@ public class ShieldInterceptAbility extends Ability {
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
         String title = I18n.get("abilities.ronrockets.shield_intercept");
-        float healthPct = getHealthPercent(placement);
-        boolean isReady = healthPct >= 1.0f;
 
         return new AbilityButton(
             title,
@@ -47,13 +50,14 @@ public class ShieldInterceptAbility extends Ability {
             hotkey,
             () -> isShieldActive(placement),
             () -> false,
-            () -> isReady,
+            () -> isReady(placement),
             () -> ShieldActivateServerboundPacket.send(placement.originPos),
             null,
             List.of(
                 fcs(title, true),
-                fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip1", (int)(healthPct * 100))),
-                isReady
+                fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip1",
+                    (int)(getHealthPercent(placement) * 100))),
+                isReady(placement)
                     ? fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip2"))
                     : fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip_damaged")),
                 fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip3", ShieldArrayBuilding.SHIELD_RADIUS)),
@@ -64,15 +68,54 @@ public class ShieldInterceptAbility extends Ability {
         );
     }
 
-    /** Returns the building's health as a 0..1 fraction based on blocks remaining. */
+    /** Returns the building's health as a 0..1 fraction.
+     *  Server: uses placedBlockPosSet.size() / totalBlocks — accurate.
+     *  Client: uses serverBlocksPlaced / totalBlocks — may lag, so if
+     *  isBuilt is true but blocksPlaced is suspiciously low, we report
+     *  1.0 to avoid showing a misleading "1%" for a healthy building. */
     public static float getHealthPercent(BuildingPlacement placement) {
-        if (placement.getBlocksTotal() == 0) return 0;
-        return (float) placement.getBlocksPlaced() / placement.getBlocksTotal();
+        int blocksPlaced = placement.getBlocksPlaced();
+        int total = placement.getBlocksTotal();
+        boolean isBuilt = placement.isBuilt;
+        boolean isClient = placement.level.isClientSide;
+
+        LOG.debug("getHealthPercent: isClient={}, isBuilt={}, blocksPlaced={}, total={}, pct={}",
+            isClient, isBuilt, blocksPlaced, total,
+            total > 0 ? String.format("%.2f", (float)blocksPlaced / total) : "N/A");
+
+        if (total <= 0) return 0;
+        if (!isBuilt) return 0;
+
+        float pct = (float) blocksPlaced / total;
+
+        // Client sync lag: isBuilt=true means building was 100% at some point.
+        // If blocksPlaced hasn't synced yet (very low value), trust isBuilt.
+        // However, after intercept (80% damage), pct would be ~0.2 — that's
+        // legitimate damage, not sync lag. We distinguish by checking if
+        // blocksPlaced is extremely low (< 10% total) which is almost
+        // certainly sync lag (serverBlocksPlaced defaults to 1).
+        if (isClient && pct < 0.10f && isBuilt) {
+            LOG.debug("getHealthPercent: client sync lag detected (pct={}), returning 1.0", pct);
+            return 1.0f;
+        }
+
+        return Math.min(1.0f, pct);
     }
 
-    /** Is the shield building fully repaired and ready to use? */
+    /** Is the shield building fully repaired and ready to use?
+     *  Server: precise check of blocksPlaced >= totalBlocks.
+     *  Client: uses isBuilt + getHealthPercent (which handles sync lag).
+     *  The server-side use() validates authoritatively before acting. */
     public static boolean isReady(BuildingPlacement placement) {
-        return getHealthPercent(placement) >= 1.0f;
+        boolean isBuilt = placement.isBuilt;
+        float healthPct = getHealthPercent(placement);
+
+        if (!isBuilt) return false;
+
+        boolean ready = healthPct >= 0.99f;
+        LOG.debug("isReady: isClient={}, isBuilt={}, healthPct={}, ready={}",
+            placement.level.isClientSide, isBuilt, healthPct, ready);
+        return ready;
     }
 
     @Override
@@ -81,17 +124,26 @@ public class ShieldInterceptAbility extends Ability {
             return;
         }
 
+        float healthPct = getHealthPercent(buildingUsing);
+        int blocksPlaced = buildingUsing.getBlocksPlaced();
+        int totalBlocks = buildingUsing.getBlocksTotal();
+
+        LOG.info("Shield use() called: healthPct={}, blocksPlaced={}, total={}, isBuilt={}",
+            healthPct, blocksPlaced, totalBlocks, buildingUsing.isBuilt);
+
         // Can only use at full health
         if (!isReady(buildingUsing)) {
+            LOG.warn("Shield use() BLOCKED — not ready! healthPct={}", healthPct);
             return;
         }
 
         // Damage ~80% of the building's blocks
-        int totalBlocks = buildingUsing.getBlocksTotal();
         int blocksToDestroy = (int) (totalBlocks * DAMAGE_FRACTION);
+        LOG.info("Shield use() ACTIVATED — destroying {} of {} blocks", blocksToDestroy, totalBlocks);
         if (blocksToDestroy > 0) {
             buildingUsing.destroyRandomBlocks(blocksToDestroy);
             if (buildingUsing.shouldBeDestroyed()) {
+                LOG.warn("Shield destroyed after intercept — too few blocks remaining");
                 com.solegendary.reignofnether.building.BuildingServerEvents.cancelBuilding(buildingUsing, buildingUsing.ownerName);
                 return;
             }

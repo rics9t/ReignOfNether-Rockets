@@ -12,10 +12,15 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 public class ShieldActivateServerboundPacket {
+
+    private static final Logger LOG = LogManager.getLogger("RonRockets/ShieldPacket");
 
     private final BlockPos originPos;
 
@@ -45,11 +50,17 @@ public class ShieldActivateServerboundPacket {
 
             BuildingPlacement placement = BuildingUtils.findBuilding(false, this.originPos);
             if (placement == null) {
+                LOG.warn("ShieldActivate: no building found at {}", this.originPos);
                 return;
             }
             if (!(placement.getBuilding() instanceof ShieldArrayBuilding)) {
+                LOG.warn("ShieldActivate: building at {} is not a ShieldArray", this.originPos);
                 return;
             }
+
+            LOG.info("ShieldActivate: found building — blocksPlaced={}, total={}, isBuilt={}, healthPct={}",
+                placement.getBlocksPlaced(), placement.getBlocksTotal(), placement.isBuilt,
+                ShieldInterceptAbility.getHealthPercent(placement));
 
             String playerName = player.getName().getString();
             boolean authorised = playerName.equals(placement.ownerName)
@@ -57,11 +68,13 @@ public class ShieldActivateServerboundPacket {
                 || AlliancesServerEvents.canControlAlly(playerName, placement.ownerName);
 
             if (!authorised) {
+                LOG.warn("ShieldActivate: player {} not authorised for building owned by {}", playerName, placement.ownerName);
                 return;
             }
 
             ShieldInterceptAbility ability = ShieldInterceptAbility.getFrom(placement);
             if (ability == null) {
+                LOG.warn("ShieldActivate: no ShieldInterceptAbility found on building");
                 return;
             }
 

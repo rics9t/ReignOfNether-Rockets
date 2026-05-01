@@ -65,7 +65,7 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
 
         if (!isClient && playerOwnsSilo(ownerName, false)) {
             PlayerServerEvents.sendMessageToPlayer(
-                ownerName, "You already have a Rocket Silo!", true, ownerName
+                ownerName, "building.ronrockets.rocket_silo.already_owned", true
             );
             LOG.info("Rejected: player already owns a silo (server-side)");
             return null;

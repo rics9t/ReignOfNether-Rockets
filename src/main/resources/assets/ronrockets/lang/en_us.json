@@ -22,6 +22,15 @@
   "buildings.piglins.reignofnether.piglin_rocket_silo": "Piglin Rocket Silo",
   "buildings.none.reignofnether.shield_array": "Shield Array",
 
+  "building.ronrockets.rocket_silo": "Rocket Silo",
+  "building.ronrockets.rocket_silo.already_owned": "You already have a Rocket Silo!",
+  "building.ronrockets.shield_array": "Shield Array",
+  "building.ronrockets.shield_array.tooltip_radius": "Intercept Radius: %s",
+  "building.ronrockets.shield_array.tooltip_fragile": "Fragile — intercept destroys 80%% of building",
+  "building.ronrockets.shield_array.tooltip_repair": "Must be fully repaired to activate",
+
+  "production.ronrockets.rocket": "Rocket",
+
   "hud.ronrockets.rocket_incoming": "Incoming Rocket!",
   "hud.ronrockets.rocket_intercepted": "Rocket Intercepted!"
 }

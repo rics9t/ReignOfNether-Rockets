@@ -71,7 +71,7 @@ public class RocketProd extends ProductionItem {
 
     @Override
     public String getItemName() {
-        return "Rocket";
+        return I18n.get("production.ronrockets.rocket");
     }
 
     @Override
@@ -106,7 +106,7 @@ public class RocketProd extends ProductionItem {
     @Override
     public StopProductionButton getCancelButton(ProductionPlacement prodBuilding, boolean first) {
         return new StopProductionButton(
-            "Rocket",
+            I18n.get("production.ronrockets.rocket"),
             ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
             prodBuilding,
             this,

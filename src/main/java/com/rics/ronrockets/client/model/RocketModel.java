@@ -3,7 +3,6 @@ package com.rics.ronrockets.client.model;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.rics.ronrockets.entity.RocketEntity;
-
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.ModelLayerLocation;
@@ -11,7 +10,7 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.*;
 import net.minecraft.resources.ResourceLocation;
 
-public class RocketModel extends EntityModel<RocketEntity> {
+public class RocketModel<T extends RocketEntity> extends EntityModel<T> {
 
     public static final ModelLayerLocation LAYER_LOCATION =
             new ModelLayerLocation(
@@ -29,54 +28,45 @@ public class RocketModel extends EntityModel<RocketEntity> {
         MeshDefinition meshdefinition = new MeshDefinition();
         PartDefinition partdefinition = meshdefinition.getRoot();
 
-        // ── Fuselage ──
         PartDefinition bone = partdefinition.addOrReplaceChild("bone",
                 CubeListBuilder.create()
-                        // Nose cone
                         .texOffs(32, 22).addBox(-3.0F, -47.0F, -3.0F, 6.0F, 10.0F, 6.0F, new CubeDeformation(0.0F))
-                        // Main body
-                        .texOffs(0, 0).addBox(-4.0F, -37.0F, -4.0F, 8.0F, 32.0F, 8.0F, new CubeDeformation(0.0F))
-                        // Nozzle ring
-                        .texOffs(32, 38).addBox(-3.0F, -5.0F, -3.0F, 6.0F, 2.0F, 6.0F, new CubeDeformation(0.0F)),
-                PartPose.offsetAndRotation(0.0F, 24.0F, 25.0F, 1.5708F, 0.0F, 0.0F));
+                        .texOffs(32, 38).addBox(-3.0F, -5.0F, -3.0F, 6.0F, 2.0F, 6.0F, new CubeDeformation(0.0F))
+                        .texOffs(0, 0).addBox(-4.0F, -37.0F, -4.0F, 8.0F, 32.0F, 8.0F, new CubeDeformation(0.0F)),
+                PartPose.offsetAndRotation(0.0F, 24.0F, 0.0F, 3.1416F, 0.0F, 1.5708F));
 
-        // ── Fins ──
-        // Rear dorsal fin
-        bone.addOrReplaceChild("cube_r1",
-                CubeListBuilder.create().texOffs(40, 46)
-                        .addBox(-5.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)),
-                PartPose.offsetAndRotation(0.0F, -5.0F, 4.0F, -1.5708F, 1.3963F, -1.5708F));
-
-        // Right wing
-        bone.addOrReplaceChild("cube_r2",
-                CubeListBuilder.create().texOffs(32, 0)
-                        .addBox(-1.0F, -2.0F, -1.0F, 22.0F, 9.0F, 2.0F, new CubeDeformation(0.0F)),
-                PartPose.offsetAndRotation(3.0F, -31.0F, 1.0F, 0.0F, 0.0873F, 0.1745F));
-
-        // Right finlet
-        bone.addOrReplaceChild("cube_r3",
-                CubeListBuilder.create().texOffs(0, 40)
-                        .addBox(-3.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)),
-                PartPose.offsetAndRotation(4.0F, -5.0F, 0.0F, 0.0F, 0.0F, 0.1745F));
-
-        // Left finlet
-        bone.addOrReplaceChild("cube_r4",
+        PartDefinition cube_r1 = bone.addOrReplaceChild("cube_r1",
                 CubeListBuilder.create().texOffs(20, 46)
                         .addBox(-5.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)),
                 PartPose.offsetAndRotation(-4.0F, -5.0F, 0.0F, 0.0F, 0.0F, -0.1745F));
 
-        // Left wing
-        bone.addOrReplaceChild("cube_r5",
+        PartDefinition cube_r2 = bone.addOrReplaceChild("cube_r2",
+                CubeListBuilder.create().texOffs(40, 46)
+                        .addBox(-5.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)),
+                PartPose.offsetAndRotation(0.0F, -5.0F, 4.0F, -1.5708F, 1.3963F, -1.5708F));
+
+        PartDefinition cube_r3 = bone.addOrReplaceChild("cube_r3",
+                CubeListBuilder.create().texOffs(32, 0)
+                        .addBox(-1.0F, -2.0F, -1.0F, 22.0F, 9.0F, 2.0F, new CubeDeformation(0.0F)),
+                PartPose.offsetAndRotation(3.0F, -31.0F, 1.0F, 0.0F, 0.0873F, 0.1745F));
+
+        PartDefinition cube_r4 = bone.addOrReplaceChild("cube_r4",
                 CubeListBuilder.create().texOffs(32, 11)
                         .addBox(-21.0F, -2.0F, -1.0F, 22.0F, 9.0F, 2.0F, new CubeDeformation(0.0F)),
                 PartPose.offsetAndRotation(-3.0F, -31.0F, 1.0F, 0.0F, -0.0873F, -0.1745F));
+
+        PartDefinition cube_r5 = bone.addOrReplaceChild("cube_r5",
+                CubeListBuilder.create().texOffs(0, 40)
+                        .addBox(-3.0F, -6.0F, -1.0F, 8.0F, 6.0F, 2.0F, new CubeDeformation(0.0F)),
+                PartPose.offsetAndRotation(4.0F, -5.0F, 0.0F, 0.0F, 0.0F, 0.1745F));
 
         return LayerDefinition.create(meshdefinition, 128, 128);
     }
 
     @Override
-    public void setupAnim(RocketEntity entity, float limbSwing, float limbSwingAmount,
+    public void setupAnim(T entity, float limbSwing, float limbSwingAmount,
                           float ageInTicks, float netHeadYaw, float headPitch) {
+        // Animation logic can be added here
     }
 
     @Override

@@ -22,6 +22,15 @@
   "buildings.piglins.reignofnether.piglin_rocket_silo": "Ракетная шахта пиглинов",
   "buildings.none.reignofnether.shield_array": "Щитовой массив",
 
+  "building.ronrockets.rocket_silo": "Ракетная шахта",
+  "building.ronrockets.rocket_silo.already_owned": "У вас уже есть ракетная шахта!",
+  "building.ronrockets.shield_array": "Щитовой массив",
+  "building.ronrockets.shield_array.tooltip_radius": "Радиус перехвата: %s",
+  "building.ronrockets.shield_array.tooltip_fragile": "Хрупкий — перехват уничтожает 80%% здания",
+  "building.ronrockets.shield_array.tooltip_repair": "Требуется полный ремонт для активации",
+
+  "production.ronrockets.rocket": "Ракета",
+
   "hud.ronrockets.rocket_incoming": "Входящая ракета!",
   "hud.ronrockets.rocket_intercepted": "Ракета перехвачена!"
 }

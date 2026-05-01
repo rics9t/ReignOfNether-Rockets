@@ -70,9 +70,9 @@ public class ShieldArrayBuilding extends ProductionBuilding {
             List.of(
                 FormattedCharSequence.forward(name, Style.EMPTY.withBold(true)),
                 ResourceCosts.getFormattedCost(COST),
-                FormattedCharSequence.forward("Intercept Radius: " + SHIELD_RADIUS, Style.EMPTY),
-                FormattedCharSequence.forward("Fragile — intercept destroys 80% of building", Style.EMPTY),
-                FormattedCharSequence.forward("Must be fully repaired to activate", Style.EMPTY)
+                FormattedCharSequence.forward(I18n.get("building.ronrockets.shield_array.tooltip_radius", SHIELD_RADIUS), Style.EMPTY),
+                FormattedCharSequence.forward(I18n.get("building.ronrockets.shield_array.tooltip_fragile"), Style.EMPTY),
+                FormattedCharSequence.forward(I18n.get("building.ronrockets.shield_array.tooltip_repair"), Style.EMPTY)
             ), this
         );
     }
