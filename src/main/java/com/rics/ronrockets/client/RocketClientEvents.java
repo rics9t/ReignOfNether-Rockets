@@ -46,39 +46,12 @@ public class RocketClientEvents {
         if (isAttacker) {
             OUTGOING.add(new RocketMarker(targetPos, OUTGOING_DURATION));
         } else {
-            MC.level.playSound(player, player.blockPosition(), SoundEvents.BELL_RESONATE,
-                SoundSource.HOSTILE, 1.0f, 0.6f);
+            MC.level.playSound(player, player.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.HOSTILE, 1.0f, 0.6f);
             INCOMING.add(new RocketMarker(targetPos, INCOMING_DURATION));
         }
 
         // Pulsing target marker on the minimap for all players
         MinimapClientEvents.addMapMarker(targetPos.getX(), targetPos.getZ(), attackerName);
-    }
-
-    // -- Screen shake --
-    private static int shakeTicksRemaining = 0;
-    private static float shakeIntensity = 0;
-
-    public static void onScreenShake(BlockPos impactPos, float intensity, int durationTicks) {
-        LocalPlayer player = MC.player;
-        if (player != null) {
-            double dist = player.distanceToSqr(
-                impactPos.getX() + 0.5, impactPos.getY() + 0.5, impactPos.getZ() + 0.5);
-            double falloff = Math.max(0, 1.0 - Math.sqrt(dist) / 200.0);
-            intensity *= falloff;
-        }
-        shakeTicksRemaining = durationTicks;
-        shakeIntensity = intensity;
-    }
-
-    public static float getShakeOffsetX() {
-        if (shakeTicksRemaining <= 0) return 0;
-        return (MC.level.random.nextFloat() - 0.5f) * shakeIntensity * 2;
-    }
-
-    public static float getShakeOffsetY() {
-        if (shakeTicksRemaining <= 0) return 0;
-        return (MC.level.random.nextFloat() - 0.5f) * shakeIntensity * 2;
     }
 
     @SubscribeEvent
@@ -110,39 +83,18 @@ public class RocketClientEvents {
             m.ticksRemaining--;
             if (m.ticksRemaining <= 0) it2.remove();
         }
-
-        // Tick screen shake
-        if (shakeTicksRemaining > 0) {
-            shakeTicksRemaining--;
-            if (shakeTicksRemaining < 10) {
-                shakeIntensity *= 0.85f;
-            }
-        }
-
-        // Track flying rockets on the minimap (refresh marker every second per rocket)
-        if (MC.player != null && MC.level.getGameTime() % 20 == 0) {
-            var searchBox = net.minecraft.world.phys.AABB.ofSize(
-                MC.player.position(), 512, 256, 512);
-            for (RocketEntity rocket : MC.level.getEntitiesOfClass(RocketEntity.class, searchBox)) {
-                MinimapClientEvents.addMapMarker(
-                    rocket.getBlockX(), rocket.getBlockZ(),
-                    rocket.getAttackerName()
-                );
-            }
-        }
     }
 
     // Expose for rendering
     public static List<RocketMarker> getIncomingWarnings() { return INCOMING; }
     public static List<RocketMarker> getOutgoingMarkers() { return OUTGOING; }
-    public static boolean isScreenShaking() { return shakeTicksRemaining > 0; }
 
     // Marker data class
     public static class RocketMarker {
         public final BlockPos target;
         public int ticksRemaining;
 
-        RocketMarker(BlockPos target, int ticksRemaining) {
+        public RocketMarker(BlockPos target, int ticksRemaining) {
             this.target = target;
             this.ticksRemaining = ticksRemaining;
         }

@@ -33,7 +33,7 @@ public class RocketModel<T extends RocketEntity> extends EntityModel<T> {
                         .texOffs(32, 22).addBox(-3.0F, -47.0F, -3.0F, 6.0F, 10.0F, 6.0F, new CubeDeformation(0.0F))
                         .texOffs(32, 38).addBox(-3.0F, -5.0F, -3.0F, 6.0F, 2.0F, 6.0F, new CubeDeformation(0.0F))
                         .texOffs(0, 0).addBox(-4.0F, -37.0F, -4.0F, 8.0F, 32.0F, 8.0F, new CubeDeformation(0.0F)),
-                PartPose.offsetAndRotation(0.0F, 24.0F, 0.0F, 3.1416F, 0.0F, 1.5708F));
+                PartPose.offsetAndRotation(0.0F, 24.0F, 21.0F, 1.5708F, 0.0F, 0.0F)); // Z changed from 25 to 21
 
         PartDefinition cube_r1 = bone.addOrReplaceChild("cube_r1",
                 CubeListBuilder.create().texOffs(20, 46)

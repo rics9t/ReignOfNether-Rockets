@@ -7,50 +7,82 @@ import org.apache.logging.log4j.Logger;
 /**
  * Common config for the RonRockets addon (available on both client and server).
  * Values are synced automatically by Forge on world load.
- * Keep this minimal — only truly tunable parameters belong here.
  */
 public class RonRocketsConfig {
-
     private static final Logger LOG = LogManager.getLogger("RonRockets");
 
     public static final ForgeConfigSpec SPEC;
 
+    // Shield settings
+    public static final ForgeConfigSpec.DoubleValue SHIELD_DAMAGE_FRACTION;
+    public static final ForgeConfigSpec.DoubleValue SHIELD_REPAIR_SPEED_MULT;
+    public static final ForgeConfigSpec.DoubleValue SHIELD_ACTIVE_DURATION_SEC;
+
+    // Rocket settings
     public static final ForgeConfigSpec.DoubleValue ROCKET_SPEED;
     public static final ForgeConfigSpec.IntValue SILO_LIMIT_PER_PLAYER;
     public static final ForgeConfigSpec.IntValue ROCKET_STORAGE_LIMIT;
 
     static {
         var builder = new ForgeConfigSpec.Builder();
-
         builder.comment("RonRockets addon settings").push("ronrockets");
 
+        builder.push("shield");
+        SHIELD_DAMAGE_FRACTION = builder
+            .comment("Fraction of blocks destroyed when shield intercepts (0.45 = 45%).")
+            .defineInRange("shieldDamageFraction", 0.45, 0.1, 0.9);
+        SHIELD_REPAIR_SPEED_MULT = builder
+            .comment("Repair speed multiplier. 1.0 = normal RoN speed, 2.0 = 2x faster.")
+            .defineInRange("shieldRepairSpeedMult", 1.0, 0.1, 5.0);
+        SHIELD_ACTIVE_DURATION_SEC = builder
+            .comment("Duration shield stays active after use (seconds). Default 5.")
+            .defineInRange("shieldActiveDurationSec", 5.0, 1.0, 30.0);
+        builder.pop();
+
+        builder.push("rocket");
         ROCKET_SPEED = builder
             .comment("Rocket flight speed in blocks per tick. Default 1.1 (~2.0x original).")
             .defineInRange("rocketSpeed", 1.1, 0.2, 5.0);
-
         SILO_LIMIT_PER_PLAYER = builder
-            .comment("Maximum Rocket Silos a single player can own. Default 1.")
-            .defineInRange("siloLimitPerPlayer", 1, 1, 10);
-
+            .comment("Maximum Rocket Silos a single player can own. Default 1 (ignored in sandbox).")
+            .defineInRange("siloLimitPerPlayer", 1, 0, 10);
         ROCKET_STORAGE_LIMIT = builder
             .comment("Maximum rockets a silo can hold (stored + in production). Default 2.")
             .defineInRange("rocketStorageLimit", 2, 1, 10);
-
         builder.pop();
 
+        builder.pop();
         SPEC = builder.build();
         LOG.info("RonRockets config SPEC built successfully");
     }
 
-    // Safe accessors — fall back to defaults if config isn't loaded yet
+    // Shield accessors
+    public static float getShieldDamageFraction() {
+        try { return (float) SHIELD_DAMAGE_FRACTION.get(); }
+        catch (Exception e) { LOG.warn("Config not loaded, using default shieldDamageFraction=0.45", e); return 0.45f; }
+    }
+
+    public static float getShieldRepairSpeedMult() {
+        try { return (float) SHIELD_REPAIR_SPEED_MULT.get(); }
+        catch (Exception e) { LOG.warn("Config not loaded, using default shieldRepairSpeedMult=1.0", e); return 1.0f; }
+    }
+
+    public static int getShieldActiveDurationTicks() {
+        try { return (int) (SHIELD_ACTIVE_DURATION_SEC.get() * 20); }
+        catch (Exception e) { LOG.warn("Config not loaded, using default shieldActiveDurationSec=5", e); return 100; }
+    }
+
+    // Rocket accessors
     public static double getRocketSpeed() {
         try { return ROCKET_SPEED.get(); }
         catch (Exception e) { LOG.warn("Config not loaded, using default rocketSpeed=1.1", e); return 1.1; }
     }
+
     public static int getSiloLimit() {
         try { return SILO_LIMIT_PER_PLAYER.get(); }
         catch (Exception e) { LOG.warn("Config not loaded, using default siloLimit=1", e); return 1; }
     }
+
     public static int getRocketStorageLimit() {
         try { return ROCKET_STORAGE_LIMIT.get(); }
         catch (Exception e) { LOG.warn("Config not loaded, using default rocketStorageLimit=2", e); return 2; }

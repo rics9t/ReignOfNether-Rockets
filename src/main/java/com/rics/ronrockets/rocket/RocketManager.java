@@ -20,65 +20,50 @@ import java.util.List;
 
 public final class RocketManager {
 
-    private RocketManager() {
-    }
+    private RocketManager() { }
 
+    /**
+     * Handles rocket impact logic:
+     * 1. If shield is ACTIVE (ability running, 5 sec window), intercept rocket mid-air
+     * 2. If shield not active, rocket impacts normally
+     */
     public static void resolveStrikeFromEntity(RocketStrike strike, ServerLevel level) {
-        int radius = 14;
+        int radius = 64; // Warning radius - larger to catch more buildings
+
+        // Check for active shields that can intercept
         for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
             if (!(placement.getBuilding() instanceof ShieldArrayBuilding)) continue;
             if (!placement.isBuilt) continue;
             if (placement.ownerName.equals(strike.attacker)) continue;
-            if (placement.centrePos.distSqr(strike.targetPos) > (double) ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS)
-                continue;
+
+            double distSq = placement.centrePos.distSqr(strike.targetPos);
+            if (distSq > (double) ShieldArrayBuilding.SHIELD_RADIUS * ShieldArrayBuilding.SHIELD_RADIUS) continue;
 
             ShieldInterceptAbility shieldAbility = ShieldInterceptAbility.getFrom(placement);
-            // Intercept if shield is currently active OR if it's fully repaired (auto-triggers)
             if (shieldAbility == null) continue;
+
+            // BUG FIX: Only intercept when shield is ACTIVELY running (not just ready)
             boolean isActive = shieldAbility.isShieldActive(placement);
-            boolean isReady = ShieldInterceptAbility.isReady(placement);
-            if (!isActive && !isReady) continue;
+            if (!isActive) continue;
 
-            // If auto-triggering (not already active), damage the building
-            if (!isActive && isReady) {
-                int blocksToDestroy = (int) (placement.getBlocksTotal() * ShieldInterceptAbility.DAMAGE_FRACTION);
-                if (blocksToDestroy > 0) {
-                    placement.destroyRandomBlocks(blocksToDestroy);
-                    if (placement.shouldBeDestroyed()) {
-                        BuildingServerEvents.cancelBuilding(placement, placement.ownerName);
-                    }
-                }
-                shieldAbility.setToMaxCooldown(placement);
-            }
-
+            // Shield is active - intercept the rocket!
             ShieldInterceptAbility.spawnInterceptParticles(level, placement.centrePos, strike.targetPos);
-            return;
+            return; // Rocket intercepted, don't impact
         }
 
+        // No intercept - rocket impacts normally
         double cx = strike.targetPos.getX() + 0.5;
         double cy = strike.targetPos.getY() + 0.5;
         double cz = strike.targetPos.getZ() + 0.5;
 
-        // ── TNT-like explosion ────────────────────────────────────
-        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, cx, cy, cz,
-            1, 0, 0, 0, 0);
-
-        // ── Shockwave — expanding smoke ring at ground level ──────
-        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, cy - 0.5, cz,
-            40, 6.0, 0.3, 6.0, 0.04);
-
-        // ── Lingering smoke cloud ─────────────────────────────────
-        level.sendParticles(ParticleTypes.LARGE_SMOKE, cx, cy + 1, cz,
-            30, 3.0, 2.0, 3.0, 0.05);
-
-        // ── Sound — single deep boom ──────────────────────────────
-        level.playSound(null, cx, cy, cz,
-            SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 6.0f, 0.7f);
-
-        // ── Screen shake ──────────────────────────────────────────
+        // Visual effects
+        level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, cx, cy, cz, 1, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, cy - 0.5, cz, 40, 6.0, 0.3, 6.0, 0.04);
+        level.sendParticles(ParticleTypes.LARGE_SMOKE, cx, cy + 1, cz, 30, 3.0, 2.0, 3.0, 0.05);
+        level.playSound(null, cx, cy, cz, SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 6.0f, 0.7f);
         ScreenShakeClientboundPacket.send(strike.targetPos, 5.0f, 25);
 
-        // ── Attack warnings for owners near impact ────────────────
+        // Attack warnings - send to all players who own buildings near impact
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
             if (building.ownerName.equals(strike.attacker)) continue;
@@ -87,9 +72,7 @@ public final class RocketManager {
             }
         }
 
-        // ── Damage buildings (block destruction) ──────────────────
-        // Collect first, destroy second — avoids ConcurrentModificationException
-        // since cancelBuilding() removes from the list we'd be iterating
+        // Damage buildings
         List<BuildingPlacement> buildingsToDamage = new ArrayList<>();
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
@@ -110,19 +93,15 @@ public final class RocketManager {
             }
         }
 
-        // ── Damage units ──────────────────────────────────────────
+        // Damage units
         AABB area = new AABB(strike.targetPos).inflate(radius);
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, area);
-
         for (LivingEntity entity : entities) {
             if (!(entity instanceof Unit)) continue;
-
             double dist = Math.sqrt(entity.distanceToSqr(cx, cy, cz));
             if (dist > radius) continue;
-
             double falloff = 1.0 - (dist / radius);
             float damage = (float) (350 * falloff);
-
             if (damage > 0) {
                 entity.hurt(level.damageSources().generic(), damage);
             }

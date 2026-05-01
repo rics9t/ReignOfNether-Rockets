@@ -6,6 +6,7 @@ import com.rics.ronrockets.rocket.RocketProduction;
 import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.sandbox.SandboxServer;
 import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.building.production.ProductionBuilding;
 import com.solegendary.reignofnether.keybinds.Keybindings;
@@ -63,7 +64,9 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
         boolean isClient = level.isClientSide();
         LOG.info("checkOnePerPlayerAndCreate called: clientSide={}, owner={}, pos={}", isClient, ownerName, pos);
 
-        if (!isClient && playerOwnsSilo(ownerName, false)) {
+        // SANDBOX: skip silo limit in sandbox mode
+        boolean isSandbox = !isClient && SandboxServer.isAnyoneASandboxPlayer();
+        if (!isClient && !isSandbox && playerOwnsSilo(ownerName, false)) {
             PlayerServerEvents.sendMessageToPlayer(
                 ownerName, "building.ronrockets.rocket_silo.already_owned", true
             );
@@ -93,6 +96,8 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
     protected static boolean clientCanPlaceSilo() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return true;
+        // SANDBOX: always allow in sandbox mode
+        if (SandboxServer.isAnyoneASandboxPlayer()) return true;
         return !playerOwnsSilo(mc.player.getName().getString(), true);
     }
 
