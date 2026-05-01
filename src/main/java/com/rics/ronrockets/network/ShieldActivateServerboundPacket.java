@@ -2,7 +2,6 @@ package com.rics.ronrockets.network;
 
 import com.rics.ronrockets.ability.ShieldInterceptAbility;
 import com.rics.ronrockets.building.ShieldArrayBuilding;
-import com.rics.ronrockets.shield.ShieldEnergyClientboundPacket;
 import com.solegendary.reignofnether.alliance.AlliancesServerEvents;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingUtils;
@@ -54,8 +53,8 @@ public class ShieldActivateServerboundPacket {
 
             String playerName = player.getName().getString();
             boolean authorised = playerName.equals(placement.ownerName)
-                    || SandboxServer.isAnyoneASandboxPlayer()
-                    || AlliancesServerEvents.canControlAlly(playerName, placement.ownerName);
+                || SandboxServer.isAnyoneASandboxPlayer()
+                || AlliancesServerEvents.canControlAlly(playerName, placement.ownerName);
 
             if (!authorised) {
                 return;
@@ -67,7 +66,7 @@ public class ShieldActivateServerboundPacket {
             }
 
             ability.use(placement.getLevel(), placement, placement.centrePos);
-            ShieldEnergyClientboundPacket.syncShieldState(placement);
+            placement.updateButtons();
             success.set(true);
         });
         ctx.get().setPacketHandled(true);

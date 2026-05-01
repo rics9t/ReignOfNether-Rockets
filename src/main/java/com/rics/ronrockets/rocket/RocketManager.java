@@ -24,9 +24,7 @@ public final class RocketManager {
     }
 
     public static void resolveStrikeFromEntity(RocketStrike strike, ServerLevel level) {
-        int radius = 12;
-
-        // ── Shield interception check ─────────────────────────────
+        int radius = 14;
         for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
             if (!(placement.getBuilding() instanceof ShieldArrayBuilding)) continue;
             if (!placement.isBuilt) continue;
@@ -35,7 +33,23 @@ public final class RocketManager {
                 continue;
 
             ShieldInterceptAbility shieldAbility = ShieldInterceptAbility.getFrom(placement);
-            if (shieldAbility == null || !shieldAbility.isShieldActive(placement)) continue;
+            // Intercept if shield is currently active OR if it's fully repaired (auto-triggers)
+            if (shieldAbility == null) continue;
+            boolean isActive = shieldAbility.isShieldActive(placement);
+            boolean isReady = ShieldInterceptAbility.isReady(placement);
+            if (!isActive && !isReady) continue;
+
+            // If auto-triggering (not already active), damage the building
+            if (!isActive && isReady) {
+                int blocksToDestroy = (int) (placement.getBlocksTotal() * ShieldInterceptAbility.DAMAGE_FRACTION);
+                if (blocksToDestroy > 0) {
+                    placement.destroyRandomBlocks(blocksToDestroy);
+                    if (placement.shouldBeDestroyed()) {
+                        BuildingServerEvents.cancelBuilding(placement, placement.ownerName);
+                    }
+                }
+                shieldAbility.setToMaxCooldown(placement);
+            }
 
             ShieldInterceptAbility.spawnInterceptParticles(level, placement.centrePos, strike.targetPos);
             return;
@@ -86,7 +100,7 @@ public final class RocketManager {
         for (BuildingPlacement building : buildingsToDamage) {
             double distSqr = building.centrePos.distSqr(strike.targetPos);
             double falloff = Math.max(0, 1.0 - (Math.sqrt(distSqr) / radius));
-            float maxPercent = building.isCapitol ? 0.30f : 0.60f;
+            float maxPercent = building.isCapitol ? 0.40f : 0.80f;
             int blocksToDestroy = (int) (building.getBlocksTotal() * maxPercent * falloff);
             if (blocksToDestroy > 0) {
                 building.destroyRandomBlocks(blocksToDestroy);
@@ -107,7 +121,7 @@ public final class RocketManager {
             if (dist > radius) continue;
 
             double falloff = 1.0 - (dist / radius);
-            float damage = (float) (200 * falloff);
+            float damage = (float) (350 * falloff);
 
             if (damage > 0) {
                 entity.hurt(level.damageSources().generic(), damage);

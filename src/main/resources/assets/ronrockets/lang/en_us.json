@@ -3,16 +3,18 @@
   "abilities.ronrockets.launch_rocket.tooltip1": "Stored rockets: %s/%s",
   "abilities.ronrockets.launch_rocket.tooltip2": "Click a ground position to fire 1 stored rocket.",
   "abilities.ronrockets.launch_rocket.tooltip3": "Launches along a long-range ballistic arc.",
+
   "abilities.ronrockets.shield_intercept": "Shield Intercept",
-  "abilities.ronrockets.shield_intercept.tooltip1": "Stored energy: %s/%s",
-  "abilities.ronrockets.shield_intercept.tooltip2": "Activation cost: %s energy",
+  "abilities.ronrockets.shield_intercept.tooltip1": "Building integrity: %s%%",
+  "abilities.ronrockets.shield_intercept.tooltip2": "Fully repaired — ready to intercept!",
+  "abilities.ronrockets.shield_intercept.tooltip_damaged": "Must be fully repaired before activating!",
   "abilities.ronrockets.shield_intercept.tooltip3": "Intercept radius: %s blocks",
-  "abilities.ronrockets.shield_intercept.tooltip4": "Intercepts enemy rockets while the shield is active.",
-  "abilities.ronrockets.shield_intercept.tooltip5": "Active for %s seconds. Cooldown: %s seconds.",
-  "abilities.ronrockets.shield_intercept.tooltip6": "Recharge rate: %s energy every %s ticks.",
+  "abilities.ronrockets.shield_intercept.tooltip5": "Auto-intercepts rockets. Destroys 80%% of building on use.",
+
   "abilities.ronrockets.produce_rocket": "Produce Rocket",
   "abilities.ronrockets.produce_rocket.tooltip1": "Stored rockets: %s/%s",
   "abilities.ronrockets.produce_rocket.tooltip2": "Queues 1 new rocket for this silo.",
+  "abilities.ronrockets.produce_rocket.queue_full": "Queue full — wait for a slot to open.",
   "abilities.ronrockets.produce_rocket.tooltip3": "Maximum storage: %s rockets.",
 
   "buildings.villagers.reignofnether.villager_rocket_silo": "Villager Rocket Silo",

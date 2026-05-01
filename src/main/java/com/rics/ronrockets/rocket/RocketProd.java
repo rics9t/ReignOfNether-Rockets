@@ -10,15 +10,11 @@ import com.solegendary.reignofnether.building.production.StopProductionButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
 import com.solegendary.reignofnether.resources.ResourceCost;
 import com.solegendary.reignofnether.resources.ResourceCosts;
-import com.solegendary.reignofnether.resources.ResourcesServerEvents;
 
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 
@@ -26,9 +22,8 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class RocketProd extends ProductionItem {
 
-    private static final Logger LOG = LogManager.getLogger("RonRockets");
-
-    public static final ResourceCost COST = ResourceCost.Unit(0, 500, 1000, 120, 0);
+    // Rockets are cheap and fast to build — the power is in the impact, not the cost
+    public static final ResourceCost COST = ResourceCost.Unit(0, 200, 300, 80, 0);
 
     public RocketProd() {
         super(COST);
@@ -43,12 +38,9 @@ public class RocketProd extends ProductionItem {
         };
     }
 
-    /**
-     * Counts how many rockets are stored + currently in the production queue.
-     */
+    /** Counts stored + in-queue rockets. Null-safe for init-time calls. */
     private static int getTotalRockets(ProductionPlacement placement) {
         int stored = placement.getCharges(ProduceRocketAbility.INSTANCE);
-        // productionQueue is null during BuildingPlacement.<init> (called from super() before field init)
         if (placement.productionQueue == null) {
             return stored;
         }
@@ -61,11 +53,7 @@ public class RocketProd extends ProductionItem {
         return stored + inQueue;
     }
 
-    /**
-     * Server-side guard: treat the rocket as unaffordable when
-     * stored + in-queue already equals the max limit.
-     * This prevents the server from accepting over-queued productions.
-     */
+    /** Server-side guard — rejects production when total >= max. */
     @Override
     public boolean canAfford(Level level, String ownerName) {
         if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
@@ -88,36 +76,31 @@ public class RocketProd extends ProductionItem {
 
     @Override
     public StartProductionButton getStartButton(ProductionPlacement prodBuilding, Keybinding hotkey) {
-        try {
-            int storedRockets = prodBuilding.getCharges(ProduceRocketAbility.INSTANCE);
-            int maxRockets = ProduceRocketAbility.getMaxRockets();
-            int totalRockets = getTotalRockets(prodBuilding);
-            String title = I18n.get("abilities.ronrockets.produce_rocket");
+        int storedRockets = prodBuilding.getCharges(ProduceRocketAbility.INSTANCE);
+        int maxRockets = ProduceRocketAbility.getMaxRockets();
+        int totalRockets = getTotalRockets(prodBuilding);
+        String title = I18n.get("abilities.ronrockets.produce_rocket");
+        boolean canQueueNow = totalRockets < maxRockets;
 
-            boolean canQueue = totalRockets < maxRockets;
-
-            return new StartProductionButton(
-                title,
-                ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
-                hotkey,
-                () -> false,
-                () -> canQueue,
-                List.of(
-                    fcs(title, true),
-                    fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip1", storedRockets, maxRockets)),
-                    ResourceCosts.getFormattedCost(COST),
-                    ResourceCosts.getFormattedPopAndTime(COST),
-                    canQueue
-                        ? fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip2"))
-                        : fcs(I18n.get("abilities.ronrockets.produce_rocket.queue_full")),
-                    fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip3", maxRockets))
-                ),
-                this
-            );
-        } catch (Exception e) {
-            LOG.error("RocketProd.getStartButton() FAILED!", e);
-            throw e;
-        }
+        // isEnabled re-evaluates every frame so the button grays out live
+        return new StartProductionButton(
+            title,
+            ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),
+            hotkey,
+            () -> false,
+            () -> getTotalRockets(prodBuilding) < ProduceRocketAbility.getMaxRockets(),
+            List.of(
+                fcs(title, true),
+                fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip1", storedRockets, maxRockets)),
+                ResourceCosts.getFormattedCost(COST),
+                ResourceCosts.getFormattedPopAndTime(COST),
+                canQueueNow
+                    ? fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip2"))
+                    : fcs(I18n.get("abilities.ronrockets.produce_rocket.queue_full")),
+                fcs(I18n.get("abilities.ronrockets.produce_rocket.tooltip3", maxRockets))
+            ),
+            this
+        );
     }
 
     @Override

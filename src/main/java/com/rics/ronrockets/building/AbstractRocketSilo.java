@@ -27,7 +27,7 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
     private static final Logger LOG = LogManager.getLogger("RonRockets");
 
     public AbstractRocketSilo(String structureName) {
-        super(structureName, ResourceCost.Building(1000, 800, 600, 0), false);
+        super(structureName, ResourceCost.Building(0, 300, 250, 0), false);
         this.name = "Rocket Silo";
 
         // Q = production
@@ -98,6 +98,6 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
 
     @Override
     public float getMeleeDamageMult() {
-        return 0.6f;
+        return 1.5f; // very fragile — rockets are glass cannons
     }
 }

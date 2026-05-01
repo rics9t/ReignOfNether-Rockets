@@ -25,11 +25,10 @@ import java.util.List;
 
 import static com.solegendary.reignofnether.building.BuildingUtils.getAbsoluteBlockData;
 
-// ✅ Extends ProductionBuilding so we can use RoN's native Range Indicator!
 public class ShieldArrayBuilding extends ProductionBuilding {
 
     public static final String STRUCTURE_NAME = "shield_array";
-    public static final ResourceCost COST = ResourceCost.Building(200, 300, 500, 0);
+    public static final ResourceCost COST = ResourceCost.Building(0, 150, 200, 0);
     public static final int SHIELD_RADIUS = 64;
 
     public ShieldArrayBuilding() {
@@ -39,7 +38,6 @@ public class ShieldArrayBuilding extends ProductionBuilding {
         this.icon = ResourceLocation.fromNamespaceAndPath("minecraft", "textures/block/beacon.png");
         this.startingBlockTypes.add(Blocks.LODESTONE);
 
-        // ✅ Bound the ability to Key Q so the button actually appears!
         this.abilities.add(new ShieldInterceptAbility(), Keybindings.keyQ);
     }
 
@@ -47,12 +45,16 @@ public class ShieldArrayBuilding extends ProductionBuilding {
     public Faction getFaction() { return Faction.NONE; }
 
     @Override
+    public float getMeleeDamageMult() {
+        return 2.0f; // very fragile — one rocket hit can nearly destroy it
+    }
+
+    @Override
     public BuildingPlacement createBuildingPlacement(Level level, BlockPos pos, Rotation rotation, String ownerName) {
-        // ✅ Native visual circle radius! 
         return new RangeIndicatorProductionPlacement(
-                this, level, pos, rotation, ownerName,
-                getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
-                false, SHIELD_RADIUS, true, false
+            this, level, pos, rotation, ownerName,
+            getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
+            false, SHIELD_RADIUS, true, false
         );
     }
 
@@ -62,14 +64,16 @@ public class ShieldArrayBuilding extends ProductionBuilding {
         String name = I18n.get("buildings.none." + key.getNamespace() + "." + key.getPath());
 
         return new BuildingPlaceButton(
-                name, this.icon, hotkey,
-                () -> BuildingClientEvents.getBuildingToPlace() == RocketBuildings.SHIELD_ARRAY,
-                () -> false, () -> true,
-                List.of(
-                        FormattedCharSequence.forward(name, Style.EMPTY.withBold(true)),
-                        ResourceCosts.getFormattedCost(COST),
-                        FormattedCharSequence.forward("Intercept Radius: " + SHIELD_RADIUS, Style.EMPTY)
-                ), this
+            name, this.icon, hotkey,
+            () -> BuildingClientEvents.getBuildingToPlace() == RocketBuildings.SHIELD_ARRAY,
+            () -> false, () -> true,
+            List.of(
+                FormattedCharSequence.forward(name, Style.EMPTY.withBold(true)),
+                ResourceCosts.getFormattedCost(COST),
+                FormattedCharSequence.forward("Intercept Radius: " + SHIELD_RADIUS, Style.EMPTY),
+                FormattedCharSequence.forward("Fragile — intercept destroys 80% of building", Style.EMPTY),
+                FormattedCharSequence.forward("Must be fully repaired to activate", Style.EMPTY)
+            ), this
         );
     }
 }

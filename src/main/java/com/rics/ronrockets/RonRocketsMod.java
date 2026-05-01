@@ -5,7 +5,6 @@ import com.rics.ronrockets.building.RocketPlacementHandler;
 import com.rics.ronrockets.entity.RocketEntities;
 import com.rics.ronrockets.network.RonRocketsNetwork;
 import com.rics.ronrockets.rocket.RocketProduction;
-import com.rics.ronrockets.shield.ShieldEnergyManager;
 import com.rics.ronrockets.shield.ShieldVisualTickHandler;
 
 import net.minecraftforge.common.MinecraftForge;
@@ -64,7 +63,6 @@ public class RonRocketsMod {
             LOG.error("FAILED to register buildings!", e);
         }
 
-        MinecraftForge.EVENT_BUS.register(ShieldEnergyManager.class);
         MinecraftForge.EVENT_BUS.register(ShieldVisualTickHandler.class);
         MinecraftForge.EVENT_BUS.register(RocketPlacementHandler.class);
 

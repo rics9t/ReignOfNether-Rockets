@@ -24,7 +24,7 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class LaunchRocketAbility extends Ability {
 
-    private static final int COOLDOWN = 100;
+    private static final int COOLDOWN = 0;
 
     public LaunchRocketAbility() {
         super(UnitAction.ATTACK_GROUND, COOLDOWN, 9999, 0, false);

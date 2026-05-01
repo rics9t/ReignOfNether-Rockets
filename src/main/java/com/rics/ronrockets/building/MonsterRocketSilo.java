@@ -23,7 +23,7 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 public class MonsterRocketSilo extends AbstractRocketSilo {
 
     public static final String STRUCTURE_NAME = "monster_rocket_silo";
-    public static final ResourceCost COST = ResourceCost.Building(1000, 800, 600, 0);
+    public static final ResourceCost COST = ResourceCost.Building(0, 300, 250, 0);
 
     public MonsterRocketSilo() {
         super(STRUCTURE_NAME);
