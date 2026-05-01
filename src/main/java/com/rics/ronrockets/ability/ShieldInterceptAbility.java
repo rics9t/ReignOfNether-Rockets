@@ -8,6 +8,7 @@ import com.solegendary.reignofnether.ability.Ability;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.hud.AbilityButton;
 import com.solegendary.reignofnether.keybinds.Keybinding;
+import com.solegendary.reignofnether.resources.ResourceName;
 import com.solegendary.reignofnether.resources.Resources;
 import com.solegendary.reignofnether.resources.ResourcesServerEvents;
 import com.solegendary.reignofnether.unit.UnitAction;
@@ -33,7 +34,7 @@ public class ShieldInterceptAbility extends Ability {
 private static final Logger LOG = LogManager.getLogger("RonRockets/Shield");
 
 public ShieldInterceptAbility() {
-super(UnitAction.NONE, 0, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);
+super(UnitAction.NONE, RonRocketsConfig.getShieldCooldownSec() * 20, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);
 }
 
 @Override
@@ -80,29 +81,19 @@ if (!isReady(buildingUsing)) {
 LOG.warn("Shield use() BLOCKED — not ready!");
 return;
 }
-// Check if on cooldown (from config - getCooldown returns float)
-int cooldownSec = RonRocketsConfig.getShieldCooldownSec();
-float currentCooldown = getCooldown(buildingUsing);
-if (currentCooldown > 0 && currentCooldown <= cooldownSec * 20) {
-LOG.warn("Shield use() BLOCKED — on cooldown ({} ticks left)", currentCooldown);
+// Block if still on cooldown
+if (getCooldown(buildingUsing) > 0) {
+LOG.warn("Shield use() BLOCKED — on cooldown");
 return;
 }
 // Deduct iron cost
 int ironCost = (int) RonRocketsConfig.getShieldIronCost();
 if (ironCost > 0) {
-// Find the owner's resources
-Resources ownerResources = null;
-for (Resources res : ResourcesServerEvents.resourcesList) {
-if (res.ownerName.equals(buildingUsing.ownerName)) {
-ownerResources = res;
-break;
-}
-}
-if (ownerResources == null || ownerResources.ore < ironCost) {
-LOG.warn("Shield use() BLOCKED — insufficient iron (need {}, have {})", ironCost, ownerResources != null ? ownerResources.ore : 0);
+if (!ResourcesServerEvents.canAfford(buildingUsing.ownerName, ResourceName.ORE, ironCost)) {
+LOG.warn("Shield use() BLOCKED — insufficient iron (need {})", ironCost);
 return;
 }
-ownerResources.ore -= ironCost;
+ResourcesServerEvents.addSubtractResources(new Resources(buildingUsing.ownerName, 0, 0, -ironCost));
 LOG.info("Shield activated — paid {} iron", ironCost);
 }
 float damageFraction = RonRocketsConfig.getShieldDamageFraction();

@@ -69,10 +69,10 @@ float ageInTicks, float netHeadYaw, float headPitch) {
 var delta = entity.getDeltaMovement();
 double horizontalDist = Math.hypot(delta.x, delta.z);
 if (horizontalDist > 0.01 || delta.y != 0) {
-float yaw = (float) (Math.atan2(delta.x, delta.z) * 180 / Math.PI);
-float pitch = (float) (Math.atan2(delta.y, horizontalDist) * 180 / Math.PI);
-bone.yRot = (float) Math.toRadians(90 - yaw);
-bone.xRot = (float) Math.toRadians(pitch - 90);
+float yaw = (float) Math.atan2(delta.x, delta.z);
+float pitch = (float) Math.atan2(delta.y, horizontalDist);
+bone.yRot = yaw - 1.5708f;
+bone.xRot = 1.5708f - pitch;
 }
 }
 

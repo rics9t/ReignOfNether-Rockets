@@ -44,7 +44,7 @@ public class RonRocketsConfig {
             .defineInRange("shieldIronCost", 50.0, 0.0, 500.0);
         SHIELD_COOLDOWN_SEC = builder
             .comment("Cooldown between shield uses (seconds). Default 60.")
-            .defineInRange("shieldCooldownSec", 60, 0, 300);
+            .defineInRange("shieldCooldownSec", 30, 0, 300);
         builder.pop();
 
         builder.push("rocket");
