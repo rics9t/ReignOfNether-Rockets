@@ -58,17 +58,17 @@ public class RonRocketsConfig {
 
     // Shield accessors
     public static float getShieldDamageFraction() {
-        try { return (float) SHIELD_DAMAGE_FRACTION.get(); }
+        try { return SHIELD_DAMAGE_FRACTION.get().floatValue(); }
         catch (Exception e) { LOG.warn("Config not loaded, using default shieldDamageFraction=0.45", e); return 0.45f; }
     }
 
     public static float getShieldRepairSpeedMult() {
-        try { return (float) SHIELD_REPAIR_SPEED_MULT.get(); }
+        try { return SHIELD_REPAIR_SPEED_MULT.get().floatValue(); }
         catch (Exception e) { LOG.warn("Config not loaded, using default shieldRepairSpeedMult=1.0", e); return 1.0f; }
     }
 
     public static int getShieldActiveDurationTicks() {
-        try { return (int) (SHIELD_ACTIVE_DURATION_SEC.get() * 20); }
+        try { return (int) (SHIELD_ACTIVE_DURATION_SEC.get().doubleValue() * 20); }
         catch (Exception e) { LOG.warn("Config not loaded, using default shieldActiveDurationSec=5", e); return 100; }
     }
 

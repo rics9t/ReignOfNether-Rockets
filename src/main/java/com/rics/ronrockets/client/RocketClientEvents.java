@@ -89,6 +89,44 @@ public class RocketClientEvents {
     public static List<RocketMarker> getIncomingWarnings() { return INCOMING; }
     public static List<RocketMarker> getOutgoingMarkers() { return OUTGOING; }
 
+    // Screen shake state
+    private static int shakeTicksRemaining = 0;
+    private static float shakeIntensity = 0;
+
+    public static void onScreenShake(BlockPos impactPos, float intensity, int durationTicks) {
+        LocalPlayer player = MC.player;
+        if (player != null) {
+            double dist = player.distanceToSqr(
+                impactPos.getX() + 0.5, impactPos.getY() + 0.5, impactPos.getZ() + 0.5);
+            double falloff = Math.max(0, 1.0 - Math.sqrt(dist) / 200.0);
+            shakeIntensity = intensity * (float) falloff;
+        } else {
+            shakeIntensity = intensity;
+        }
+        shakeTicksRemaining = durationTicks;
+    }
+
+    public static float getShakeOffsetX() {
+        if (shakeTicksRemaining <= 0) return 0;
+        return (MC.level.random.nextFloat() - 0.5f) * shakeIntensity * 2;
+    }
+
+    public static float getShakeOffsetY() {
+        if (shakeTicksRemaining <= 0) return 0;
+        return (MC.level.random.nextFloat() - 0.5f) * shakeIntensity * 2;
+    }
+
+    public static boolean isScreenShaking() { return shakeTicksRemaining > 0; }
+
+    @SubscribeEvent
+    public static void onClientTickPost(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        if (shakeTicksRemaining > 0) {
+            shakeTicksRemaining--;
+            if (shakeTicksRemaining < 10) shakeIntensity *= 0.85f;
+        }
+    }
+
     // Marker data class
     public static class RocketMarker {
         public final BlockPos target;
