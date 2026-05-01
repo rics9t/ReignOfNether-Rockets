@@ -15,6 +15,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.AABB;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public final class RocketManager {
@@ -46,19 +47,19 @@ public final class RocketManager {
 
         // ── TNT-like explosion ────────────────────────────────────
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, cx, cy, cz,
-                1, 0, 0, 0, 0);
+            1, 0, 0, 0, 0);
 
         // ── Shockwave — expanding smoke ring at ground level ──────
         level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, cy - 0.5, cz,
-                40, 6.0, 0.3, 6.0, 0.04);
+            40, 6.0, 0.3, 6.0, 0.04);
 
         // ── Lingering smoke cloud ─────────────────────────────────
         level.sendParticles(ParticleTypes.LARGE_SMOKE, cx, cy + 1, cz,
-                30, 3.0, 2.0, 3.0, 0.05);
+            30, 3.0, 2.0, 3.0, 0.05);
 
         // ── Sound — single deep boom ──────────────────────────────
         level.playSound(null, cx, cy, cz,
-                SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 6.0f, 0.7f);
+            SoundEvents.GENERIC_EXPLODE, SoundSource.MASTER, 6.0f, 0.7f);
 
         // ── Screen shake ──────────────────────────────────────────
         ScreenShakeClientboundPacket.send(strike.targetPos, 5.0f, 25);
@@ -73,17 +74,20 @@ public final class RocketManager {
         }
 
         // ── Damage buildings (block destruction) ──────────────────
+        // Collect first, destroy second — avoids ConcurrentModificationException
+        // since cancelBuilding() removes from the list we'd be iterating
+        List<BuildingPlacement> buildingsToDamage = new ArrayList<>();
         for (BuildingPlacement building : BuildingServerEvents.getBuildings()) {
             if (!building.isBuilt) continue;
-
             double distSqr = building.centrePos.distSqr(strike.targetPos);
             if (distSqr > (double) radius * radius) continue;
-
+            buildingsToDamage.add(building);
+        }
+        for (BuildingPlacement building : buildingsToDamage) {
+            double distSqr = building.centrePos.distSqr(strike.targetPos);
             double falloff = Math.max(0, 1.0 - (Math.sqrt(distSqr) / radius));
             float maxPercent = building.isCapitol ? 0.30f : 0.60f;
-
             int blocksToDestroy = (int) (building.getBlocksTotal() * maxPercent * falloff);
-
             if (blocksToDestroy > 0) {
                 building.destroyRandomBlocks(blocksToDestroy);
                 if (building.shouldBeDestroyed()) {

@@ -25,8 +25,8 @@ public class RonRocketsConfig {
         builder.comment("RonRockets addon settings").push("ronrockets");
 
         ROCKET_SPEED = builder
-            .comment("Rocket flight speed in blocks per tick. Default 1.4 (~2.5x original).")
-            .defineInRange("rocketSpeed", 1.4, 0.2, 5.0);
+            .comment("Rocket flight speed in blocks per tick. Default 1.1 (~2.0x original).")
+            .defineInRange("rocketSpeed", 1.1, 0.2, 5.0);
 
         SILO_LIMIT_PER_PLAYER = builder
             .comment("Maximum Rocket Silos a single player can own. Default 1.")
@@ -45,7 +45,7 @@ public class RonRocketsConfig {
     // Safe accessors — fall back to defaults if config isn't loaded yet
     public static double getRocketSpeed() {
         try { return ROCKET_SPEED.get(); }
-        catch (Exception e) { LOG.warn("Config not loaded, using default rocketSpeed=1.4", e); return 1.4; }
+        catch (Exception e) { LOG.warn("Config not loaded, using default rocketSpeed=1.1", e); return 1.1; }
     }
     public static int getSiloLimit() {
         try { return SILO_LIMIT_PER_PLAYER.get(); }
