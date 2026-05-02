@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 @Mixin(MinimapClientEvents.class)
 public interface MinimapAccessMixin {
 
-    @Invoker("getWorldPosOnMinimap")
+    @Invoker(value = "getWorldPosOnMinimap", remap = false)
     static BlockPos ronrockets$getWorldPosOnMinimap(float x, float y, boolean offsetForCamera) {
         throw new AssertionError();
     }
