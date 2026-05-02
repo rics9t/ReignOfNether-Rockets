@@ -23,8 +23,8 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 public class RocketProd extends ProductionItem {
 
     // Balanced against RoN: comparable to a high-tier unit production cost
-    // Food:100 Ore:150 Gold:40 Ticks:1200 (60 seconds)
-    public static final ResourceCost COST = ResourceCost.Unit(0, 0, 300, 240, 0);
+    // Food:100 Wood:150 Iron:40 Time: 90 (90 seconds)
+    public static final ResourceCost COST = ResourceCost.Unit(150, 250, 350, 85, 0);
 
     public RocketProd() {
         super(COST);

@@ -32,10 +32,10 @@ public class RonRocketsConfig {
         builder.push("shield");
         SHIELD_DAMAGE_FRACTION = builder
             .comment("Fraction of blocks destroyed when shield intercepts (0.20 = 20%).")
-            .defineInRange("shieldDamageFraction", 0.20, 0.1, 0.9);
+            .defineInRange("shieldDamageFraction", 0.10, 0.1, 0.9);
         SHIELD_REPAIR_SPEED_MULT = builder
             .comment("Repair speed multiplier. 1.0 = normal RoN speed, 2.0 = 2x faster.")
-            .defineInRange("shieldRepairSpeedMult", 0.5, 0.1, 5.0);
+            .defineInRange("shieldRepairSpeedMult", 0.3, 0.1, 5.0);
         SHIELD_ACTIVE_DURATION_SEC = builder
             .comment("Duration shield stays active after use (seconds). Default 5.")
             .defineInRange("shieldActiveDurationSec", 5.0, 1.0, 30.0);
@@ -44,7 +44,7 @@ public class RonRocketsConfig {
             .defineInRange("shieldIronCost", 50.0, 0.0, 500.0);
         SHIELD_COOLDOWN_SEC = builder
             .comment("Cooldown between shield uses (seconds). Default 60.")
-            .defineInRange("shieldCooldownSec", 60, 0, 300);
+            .defineInRange("shieldCooldownSec", 30, 0, 300);
         builder.pop();
 
         builder.push("rocket");

@@ -28,7 +28,7 @@
   "building.ronrockets.rocket_silo.already_owned": "У вас уже есть ракетная шахта!",
   "building.ronrockets.shield_array": "Щитовой массив",
   "building.ronrockets.shield_array.tooltip_radius": "Радиус перехвата: %s",
-  "building.ronrockets.shield_array.tooltip_fragile": "Хрупкий — перехват уничтожает 20%% здания",
+  "building.ronrockets.shield_array.tooltip_fragile": "Хрупкий — перехват уничтожает часть здания",
   "building.ronrockets.shield_array.tooltip_repair": "Требуется полный ремонт для активации",
 
   "production.ronrockets.rocket": "Ракета",
