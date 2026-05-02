@@ -35,7 +35,7 @@ public class RonRocketsConfig {
             .defineInRange("shieldDamageFraction", 0.20, 0.1, 0.9);
         SHIELD_REPAIR_SPEED_MULT = builder
             .comment("Repair speed multiplier. 1.0 = normal RoN speed, 2.0 = 2x faster.")
-            .defineInRange("shieldRepairSpeedMult", 1.0, 0.1, 5.0);
+            .defineInRange("shieldRepairSpeedMult", 0.5, 0.1, 5.0);
         SHIELD_ACTIVE_DURATION_SEC = builder
             .comment("Duration shield stays active after use (seconds). Default 5.")
             .defineInRange("shieldActiveDurationSec", 5.0, 1.0, 30.0);

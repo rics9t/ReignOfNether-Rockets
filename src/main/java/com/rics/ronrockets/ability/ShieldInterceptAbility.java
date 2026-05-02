@@ -34,7 +34,7 @@ public class ShieldInterceptAbility extends Ability {
     private static final Logger LOG = LogManager.getLogger("RonRockets/Shield");
 
     // 60-second cooldown (comparable to powerful abilities like CallLightning)
-    private static final int COOLDOWN_TICKS = 1200;
+    private static final int COOLDOWN_TICKS = 300;
 
     public ShieldInterceptAbility() {
         super(UnitAction.NONE, COOLDOWN_TICKS, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);

@@ -24,7 +24,7 @@ public class RocketProd extends ProductionItem {
 
     // Balanced against RoN: comparable to a high-tier unit production cost
     // Food:100 Ore:150 Gold:40 Ticks:1200 (60 seconds)
-    public static final ResourceCost COST = ResourceCost.Unit(0, 100, 150, 1200, 0);
+    public static final ResourceCost COST = ResourceCost.Unit(0, 0, 300, 240, 0);
 
     public RocketProd() {
         super(COST);
