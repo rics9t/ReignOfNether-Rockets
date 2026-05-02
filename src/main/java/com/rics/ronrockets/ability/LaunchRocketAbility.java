@@ -24,10 +24,12 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class LaunchRocketAbility extends Ability {
 
-    private static final int COOLDOWN = 0;
+    // 30-second cooldown between launches (comparable to CallLightning at 60s,
+    // but rocket must be produced first so 30s is fair)
+    private static final int COOLDOWN_TICKS = 600;
 
     public LaunchRocketAbility() {
-        super(UnitAction.ATTACK_GROUND, COOLDOWN, 9999, 0, false);
+        super(UnitAction.ATTACK_GROUND, COOLDOWN_TICKS, 9999, 0, false);
     }
 
     @Override
@@ -42,28 +44,28 @@ public class LaunchRocketAbility extends Ability {
         String title = I18n.get("abilities.ronrockets.launch_rocket");
 
         return new AbilityButton(
-                title,
-                ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
-                hotkey,
-                () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
-                () -> false,
-                () -> storedRockets > 0,
-                () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
-                null,
-                List.of(
-                        fcs(title, true),
-                        fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip1", storedRockets, maxRockets)),
-                        fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip2")),
-                        fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip3"))
-                ),
-                this,
-                placement
+            title,
+            ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "textures/icons/launch_rocket.png"),
+            hotkey,
+            () -> CursorClientEvents.getLeftClickAction() == UnitAction.ATTACK_GROUND,
+            () -> false,
+            () -> storedRockets > 0,
+            () -> CursorClientEvents.setLeftClickAction(UnitAction.ATTACK_GROUND),
+            null,
+            List.of(
+                fcs(title, true),
+                fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip1", storedRockets, maxRockets)),
+                fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip2")),
+                fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip3")),
+                fcs(I18n.get("abilities.ronrockets.launch_rocket.tooltip4", COOLDOWN_TICKS / 20))
+            ),
+            this,
+            placement
         );
     }
 
     @Override
     public void use(Level level, BuildingPlacement buildingUsing, BlockPos targetBp) {
-
         if (!(buildingUsing.getBuilding() instanceof AbstractRocketSilo)) return;
 
         int rockets = buildingUsing.getCharges(ProduceRocketAbility.INSTANCE);
@@ -75,9 +77,9 @@ public class LaunchRocketAbility extends Ability {
 
             RocketEntity rocket = new RocketEntity(RocketEntities.ROCKET.get(), serverLevel);
             rocket.setPos(
-                    buildingUsing.centrePos.getX() + 0.5,
-                    buildingUsing.centrePos.getY() + 5,
-                    buildingUsing.centrePos.getZ() + 0.5
+                buildingUsing.centrePos.getX() + 0.5,
+                buildingUsing.centrePos.getY() + 5,
+                buildingUsing.centrePos.getZ() + 0.5
             );
             rocket.setTarget(targetBp);
             rocket.setAttacker(buildingUsing.ownerName);

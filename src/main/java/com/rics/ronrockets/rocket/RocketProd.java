@@ -22,8 +22,9 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class RocketProd extends ProductionItem {
 
-    // Rockets are cheap and fast to build — the power is in the impact, not the cost
-    public static final ResourceCost COST = ResourceCost.Unit(0, 200, 300, 80, 0);
+    // Balanced against RoN: comparable to a high-tier unit production cost
+    // Food:100 Ore:150 Gold:40 Ticks:1200 (60 seconds)
+    public static final ResourceCost COST = ResourceCost.Unit(0, 100, 150, 1200, 0);
 
     public RocketProd() {
         super(COST);
@@ -38,7 +39,7 @@ public class RocketProd extends ProductionItem {
         };
     }
 
-    /** Counts stored + in-queue rockets. Null-safe for init-time calls. */
+    /** Counts stored + in-queue rockets. */
     private static int getTotalRockets(ProductionPlacement placement) {
         int stored = placement.getCharges(ProduceRocketAbility.INSTANCE);
         if (placement.productionQueue == null) {
@@ -59,7 +60,7 @@ public class RocketProd extends ProductionItem {
         if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
             for (BuildingPlacement b : com.solegendary.reignofnether.building.BuildingServerEvents.getBuildings()) {
                 if (b instanceof ProductionPlacement pp && b.ownerName.equals(ownerName)
-                        && b.getBuilding() instanceof com.rics.ronrockets.building.AbstractRocketSilo) {
+                    && b.getBuilding() instanceof com.rics.ronrockets.building.AbstractRocketSilo) {
                     if (getTotalRockets(pp) >= ProduceRocketAbility.getMaxRockets()) {
                         return false;
                     }
@@ -82,7 +83,6 @@ public class RocketProd extends ProductionItem {
         String title = I18n.get("abilities.ronrockets.produce_rocket");
         boolean canQueueNow = totalRockets < maxRockets;
 
-        // isEnabled re-evaluates every frame so the button grays out live
         return new StartProductionButton(
             title,
             ResourceLocation.fromNamespaceAndPath("ronrockets", "textures/icons/produce_rocket.png"),

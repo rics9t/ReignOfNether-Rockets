@@ -3,14 +3,15 @@
   "abilities.ronrockets.launch_rocket.tooltip1": "Запас ракет: %s/%s",
   "abilities.ronrockets.launch_rocket.tooltip2": "Нажмите по земле, чтобы выпустить 1 сохранённую ракету.",
   "abilities.ronrockets.launch_rocket.tooltip3": "Ракета летит по дальней баллистической траектории.",
+  "abilities.ronrockets.launch_rocket.tooltip4": "Перезарядка: %s сек",
 
   "abilities.ronrockets.shield_intercept": "Перехват щитом",
   "abilities.ronrockets.shield_intercept.tooltip1": "Целостность здания: %s%%",
   "abilities.ronrockets.shield_intercept.tooltip2": "Полностью отремонтирован — готов к перехвату!",
   "abilities.ronrockets.shield_intercept.tooltip_damaged": "Необходимо полное восстановление для активации!",
   "abilities.ronrockets.shield_intercept.tooltip3": "Радиус перехвата: %s блоков",
-  "abilities.ronrockets.shield_intercept.tooltip5": "Активен %s сек. Взрывает ракеты в радиусе. Уничтожает 45%% здания при использовании.",
-"abilities.ronrockets.shield_intercept.tooltip6": "Стоимость железа: %s | Перезарядка: %s сек",
+  "abilities.ronrockets.shield_intercept.tooltip5": "Активен %s сек. Взрывает ракеты в радиусе. Уничтожает 20%% здания при использовании.",
+  "abilities.ronrockets.shield_intercept.tooltip6": "Стоимость железа: %s | Перезарядка: %s сек",
 
   "abilities.ronrockets.produce_rocket": "Создать ракету",
   "abilities.ronrockets.produce_rocket.tooltip1": "Запас ракет: %s/%s",
@@ -27,7 +28,7 @@
   "building.ronrockets.rocket_silo.already_owned": "У вас уже есть ракетная шахта!",
   "building.ronrockets.shield_array": "Щитовой массив",
   "building.ronrockets.shield_array.tooltip_radius": "Радиус перехвата: %s",
-  "building.ronrockets.shield_array.tooltip_fragile": "Хрупкий — перехват уничтожает 80%% здания",
+  "building.ronrockets.shield_array.tooltip_fragile": "Хрупкий — перехват уничтожает 20%% здания",
   "building.ronrockets.shield_array.tooltip_repair": "Требуется полный ремонт для активации",
 
   "production.ronrockets.rocket": "Ракета",

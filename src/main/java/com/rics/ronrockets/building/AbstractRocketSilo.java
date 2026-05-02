@@ -1,5 +1,6 @@
 package com.rics.ronrockets.building;
 
+import com.rics.ronrockets.RonRocketsConfig;
 import com.rics.ronrockets.ability.LaunchRocketAbility;
 import com.rics.ronrockets.ability.ProduceRocketAbility;
 import com.rics.ronrockets.rocket.RocketProduction;
@@ -31,51 +32,50 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
         super(structureName, ResourceCost.Building(0, 300, 250, 0), false);
         this.name = "Rocket Silo";
 
-        // Q = production
         this.productions.add(RocketProduction.ROCKET_PROD, Keybindings.keyQ);
-
-        // W = launch
         this.abilities.add(new LaunchRocketAbility(), Keybindings.keyW);
     }
 
-    /**
-     * Checks whether a player already owns a Rocket Silo (built OR under construction).
-     * Shared by all faction silos and the RocketPlacementHandler.
-     */
-    public static boolean playerOwnsSilo(String ownerName, boolean clientSide) {
+    /** Count how many silos a player currently owns. */
+    public static int countSiloOwned(String ownerName, boolean clientSide) {
         Iterable<BuildingPlacement> buildings = clientSide
             ? BuildingClientEvents.getBuildings()
             : BuildingServerEvents.getBuildings();
+        int count = 0;
         for (BuildingPlacement b : buildings) {
             if (b.getBuilding() instanceof AbstractRocketSilo && b.ownerName.equals(ownerName)) {
-                return true;
+                count++;
             }
         }
-        return false;
+        return count;
     }
 
     /**
      * Server-side guard + placement factory.
-     * Returns null (cancels placement) when the player already owns a silo.
-     * Subclasses call this from createBuildingPlacement.
+     * Returns null (cancels placement) when the player has reached the silo limit.
      */
     protected BuildingPlacement checkOnePerPlayerAndCreate(Level level, BlockPos pos,
-            Rotation rotation, String ownerName) {
+                                                           Rotation rotation, String ownerName) {
         boolean isClient = level.isClientSide();
         LOG.info("checkOnePerPlayerAndCreate called: clientSide={}, owner={}, pos={}", isClient, ownerName, pos);
 
-        // SANDBOX: skip silo limit in sandbox mode
-        boolean isSandbox = !isClient && SandboxServer.isAnyoneASandboxPlayer();
-        if (!isClient && !isSandbox && playerOwnsSilo(ownerName, false)) {
-            PlayerServerEvents.sendMessageToPlayer(
-                ownerName, "building.ronrockets.rocket_silo.already_owned", true
-            );
-            LOG.info("Rejected: player already owns a silo (server-side)");
-            return null;
+        if (!isClient) {
+            // Sandbox players bypass the silo limit entirely
+            if (!SandboxServer.isSandboxPlayer(ownerName)) {
+                int limit = RonRocketsConfig.getSiloLimit();
+                int current = countSiloOwned(ownerName, false);
+                if (current >= limit) {
+                    PlayerServerEvents.sendMessageToPlayer(
+                        ownerName, "building.ronrockets.rocket_silo.already_owned", true
+                    );
+                    LOG.info("Rejected: player owns {} silos, limit is {}", current, limit);
+                    return null;
+                }
+            }
         }
 
         try {
-            BuildingPlacement placement = new com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement(
+            BuildingPlacement placement = new ProductionPlacement(
                 this, level, pos, rotation, ownerName,
                 getAbsoluteBlockData(getRelativeBlockData(level), level, pos, rotation),
                 false
@@ -89,20 +89,18 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
         }
     }
 
-    /**
-     * Client-side isEnabled supplier for the build button.
-     * Disables the button when the local player already owns a silo.
-     */
+    /** Client-side isEnabled supplier for the build button. */
     protected static boolean clientCanPlaceSilo() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return true;
-        // SANDBOX: always allow in sandbox mode
-        if (SandboxServer.isAnyoneASandboxPlayer()) return true;
-        return !playerOwnsSilo(mc.player.getName().getString(), true);
+        if (SandboxServer.isSandboxPlayer(mc.player.getName().getString())) return true;
+        int limit = RonRocketsConfig.getSiloLimit();
+        int current = countSiloOwned(mc.player.getName().getString(), true);
+        return current < limit;
     }
 
     @Override
     public float getMeleeDamageMult() {
-        return 1.5f; // very fragile — rockets are glass cannons
+        return 1.5f;
     }
 }

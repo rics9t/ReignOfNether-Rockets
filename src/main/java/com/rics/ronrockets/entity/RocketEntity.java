@@ -1,8 +1,14 @@
 package com.rics.ronrockets.entity;
 
 import com.rics.ronrockets.RonRocketsConfig;
+import com.rics.ronrockets.ability.ShieldInterceptAbility;
+import com.rics.ronrockets.building.ShieldArrayBuilding;
+import com.rics.ronrockets.network.ScreenShakeClientboundPacket;
 import com.rics.ronrockets.rocket.RocketManager;
 import com.rics.ronrockets.rocket.RocketStrike;
+import com.solegendary.reignofnether.building.BuildingPlacement;
+import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.unit.interfaces.Unit;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -10,9 +16,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.network.NetworkHooks;
 
 public class RocketEntity extends Entity {
@@ -31,6 +41,22 @@ public class RocketEntity extends Entity {
 
     public RocketEntity(EntityType<? extends RocketEntity> type, Level level) {
         super(type, level);
+        this.setNoGravity(true);
+    }
+
+    @Override
+    public boolean canBeCollidedWith() {
+        return false;
+    }
+
+    @Override
+    public boolean isPushable() {
+        return false;
+    }
+
+    @Override
+    public boolean isPickable() {
+        return false;
     }
 
     public void setTarget(BlockPos target) {
@@ -85,7 +111,6 @@ public class RocketEntity extends Entity {
             double dz = endZ - startZ;
             double dist = Math.sqrt(dx * dx + dz * dz);
 
-            // Speed from config (default ~1.4, roughly 2.5x the original 0.55)
             double speed = RonRocketsConfig.getRocketSpeed();
             maxFlightTicks = Math.max(20, (int) Math.ceil(dist / speed));
 
@@ -98,15 +123,41 @@ public class RocketEntity extends Entity {
         }
 
         flightTicks++;
+
+        // Check for active shields that can intercept mid-flight (every 4 ticks)
+        if (flightTicks % 4 == 0) {
+            BlockPos currentPos = blockPosition();
+            for (BuildingPlacement placement : BuildingServerEvents.getBuildings()) {
+                if (!(placement.getBuilding() instanceof ShieldArrayBuilding)) continue;
+                if (!placement.isBuilt) continue;
+                if (placement.ownerName.equals(attacker)) continue;
+
+                double distToShield = placement.centrePos.distSqr(currentPos);
+                double shieldRadius = ShieldArrayBuilding.SHIELD_RADIUS;
+                if (distToShield > shieldRadius * shieldRadius) continue;
+
+                ShieldInterceptAbility shieldAbility = ShieldInterceptAbility.getFrom(placement);
+                if (shieldAbility == null) continue;
+
+                if (shieldAbility.isShieldActive(placement)) {
+                    // Shield intercepts — destroy rocket mid-air
+                    ShieldInterceptAbility.spawnInterceptParticles(serverLevel, placement.centrePos, currentPos);
+                    spawnMidAirDetonation(serverLevel, currentPos);
+                    discard();
+                    return;
+                }
+            }
+        }
+
         if (flightTicks >= maxFlightTicks) {
             RocketManager.resolveStrikeFromEntity(
-                    new RocketStrike(
-                            getAttackerName(),
-                            BlockPos.containing(startX, startY, startZ),
-                            target,
-                            serverLevel.getGameTime()
-                    ),
-                    serverLevel
+                new RocketStrike(
+                    getAttackerName(),
+                    BlockPos.containing(startX, startY, startZ),
+                    target,
+                    serverLevel.getGameTime()
+                ),
+                serverLevel
             );
             discard();
             return;
@@ -128,10 +179,33 @@ public class RocketEntity extends Entity {
         setPos(nextX, nextY, nextZ);
     }
 
-    /**
-     * Simplified trail — smoke only, with random scatter and slight drift.
-     * Keeps performance light: ~3 particles per tick max.
-     */
+    /** Small mid-air detonation when shield intercepts — reduced damage and mild effects. */
+    private void spawnMidAirDetonation(ServerLevel level, BlockPos pos) {
+        double cx = pos.getX() + 0.5;
+        double cy = pos.getY() + 0.5;
+        double cz = pos.getZ() + 0.5;
+
+        level.sendParticles(ParticleTypes.FLASH, cx, cy, cz, 1, 0, 0, 0, 0);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, cy, cz, 20, 2.0, 1.0, 2.0, 0.03);
+        level.sendParticles(ParticleTypes.END_ROD, cx, cy, cz, 15, 1.5, 1.0, 1.5, 0.05);
+        level.playSound(null, cx, cy, cz, SoundEvents.FIREWORK_ROCKET_BLAST, SoundSource.BLOCKS, 2.0f, 1.2f);
+        ScreenShakeClientboundPacket.send(pos, 1.5f, 8);
+
+        // Small damage radius for mid-air detonation — much less than full impact
+        double smallRadius = 4.0;
+        AABB area = new AABB(pos).inflate(smallRadius);
+        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, area)) {
+            if (!(entity instanceof Unit)) continue;
+            double dist = Math.sqrt(entity.distanceToSqr(cx, cy, cz));
+            if (dist > smallRadius) continue;
+            double falloff = 1.0 - (dist / smallRadius);
+            float damage = (float) (30 * falloff);
+            if (damage > 0) {
+                entity.hurt(level.damageSources().generic(), damage);
+            }
+        }
+    }
+
     private void spawnTrailParticles() {
         Level lvl = level();
         double x = getX();
@@ -139,27 +213,37 @@ public class RocketEntity extends Entity {
         double z = getZ();
         boolean descending = getDeltaMovement().y < 0;
 
-        // Primary smoke — campfire smoke with random scatter and drift
         double scatter = 0.5;
         double driftY = descending ? 0.06 : -0.06;
         lvl.addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE,
-                x + (random.nextDouble() - 0.5) * scatter,
-                y - 0.6,
-                z + (random.nextDouble() - 0.5) * scatter,
-                (random.nextDouble() - 0.5) * 0.08,
-                driftY + (random.nextDouble() - 0.5) * 0.02,
-                (random.nextDouble() - 0.5) * 0.08
+            x + (random.nextDouble() - 0.5) * scatter,
+            y - 0.6,
+            z + (random.nextDouble() - 0.5) * scatter,
+            (random.nextDouble() - 0.5) * 0.08,
+            driftY + (random.nextDouble() - 0.5) * 0.02,
+            (random.nextDouble() - 0.5) * 0.08
         );
 
-        // Larger lingering smoke every other tick for volume
         if (tickCount % 2 == 0) {
             lvl.addParticle(ParticleTypes.LARGE_SMOKE,
-                    x + (random.nextDouble() - 0.5) * scatter * 1.2,
-                    y - 1.0,
-                    z + (random.nextDouble() - 0.5) * scatter * 1.2,
-                    (random.nextDouble() - 0.5) * 0.04,
-                    driftY * 0.6,
-                    (random.nextDouble() - 0.5) * 0.04
+                x + (random.nextDouble() - 0.5) * scatter * 1.2,
+                y - 1.0,
+                z + (random.nextDouble() - 0.5) * scatter * 1.2,
+                (random.nextDouble() - 0.5) * 0.04,
+                driftY * 0.6,
+                (random.nextDouble() - 0.5) * 0.04
+            );
+        }
+
+        // Fire trail on ascent
+        if (!descending && tickCount % 3 == 0) {
+            lvl.addParticle(ParticleTypes.FLAME,
+                x + (random.nextDouble() - 0.5) * 0.3,
+                y - 1.2,
+                z + (random.nextDouble() - 0.5) * 0.3,
+                (random.nextDouble() - 0.5) * 0.06,
+                -0.15,
+                (random.nextDouble() - 0.5) * 0.06
             );
         }
     }
@@ -172,15 +256,12 @@ public class RocketEntity extends Entity {
         if (tag.contains("Attacker")) {
             attacker = tag.getString("Attacker");
         }
-
         startX = tag.getDouble("StartX");
         startY = tag.getDouble("StartY");
         startZ = tag.getDouble("StartZ");
-
         ctrlX = tag.getDouble("CtrlX");
         ctrlY = tag.getDouble("CtrlY");
         ctrlZ = tag.getDouble("CtrlZ");
-
         flightTicks = tag.getInt("FlightTicks");
         maxFlightTicks = tag.getInt("MaxFlightTicks");
     }
@@ -195,15 +276,12 @@ public class RocketEntity extends Entity {
         if (attacker != null) {
             tag.putString("Attacker", attacker);
         }
-
         tag.putDouble("StartX", startX);
         tag.putDouble("StartY", startY);
         tag.putDouble("StartZ", startZ);
-
         tag.putDouble("CtrlX", ctrlX);
         tag.putDouble("CtrlY", ctrlY);
         tag.putDouble("CtrlZ", ctrlZ);
-
         tag.putInt("FlightTicks", flightTicks);
         tag.putInt("MaxFlightTicks", maxFlightTicks);
     }

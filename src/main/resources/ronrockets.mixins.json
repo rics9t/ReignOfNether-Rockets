@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "com.rics.ronrockets.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "MinimapAccessMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "ronrockets.refmap.json"
+}

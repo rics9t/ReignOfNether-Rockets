@@ -31,8 +31,8 @@ public class RonRocketsConfig {
 
         builder.push("shield");
         SHIELD_DAMAGE_FRACTION = builder
-            .comment("Fraction of blocks destroyed when shield intercepts (0.45 = 45%).")
-            .defineInRange("shieldDamageFraction", 0.45, 0.1, 0.9);
+            .comment("Fraction of blocks destroyed when shield intercepts (0.20 = 20%).")
+            .defineInRange("shieldDamageFraction", 0.20, 0.1, 0.9);
         SHIELD_REPAIR_SPEED_MULT = builder
             .comment("Repair speed multiplier. 1.0 = normal RoN speed, 2.0 = 2x faster.")
             .defineInRange("shieldRepairSpeedMult", 1.0, 0.1, 5.0);
@@ -44,12 +44,12 @@ public class RonRocketsConfig {
             .defineInRange("shieldIronCost", 50.0, 0.0, 500.0);
         SHIELD_COOLDOWN_SEC = builder
             .comment("Cooldown between shield uses (seconds). Default 60.")
-            .defineInRange("shieldCooldownSec", 30, 0, 300);
+            .defineInRange("shieldCooldownSec", 60, 0, 300);
         builder.pop();
 
         builder.push("rocket");
         ROCKET_SPEED = builder
-            .comment("Rocket flight speed in blocks per tick. Default 1.1 (~2.0x original).")
+            .comment("Rocket flight speed in blocks per tick. Default 1.1.")
             .defineInRange("rocketSpeed", 1.1, 0.2, 5.0);
         SILO_LIMIT_PER_PLAYER = builder
             .comment("Maximum Rocket Silos a single player can own. Default 1 (ignored in sandbox).")
@@ -67,7 +67,7 @@ public class RonRocketsConfig {
     // Shield accessors
     public static float getShieldDamageFraction() {
         try { return SHIELD_DAMAGE_FRACTION.get().floatValue(); }
-        catch (Exception e) { LOG.warn("Config not loaded, using default shieldDamageFraction=0.45", e); return 0.45f; }
+        catch (Exception e) { LOG.warn("Config not loaded, using default shieldDamageFraction=0.20", e); return 0.20f; }
     }
 
     public static float getShieldRepairSpeedMult() {

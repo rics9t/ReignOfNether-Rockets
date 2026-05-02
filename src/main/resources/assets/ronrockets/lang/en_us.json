@@ -3,13 +3,14 @@
   "abilities.ronrockets.launch_rocket.tooltip1": "Stored rockets: %s/%s",
   "abilities.ronrockets.launch_rocket.tooltip2": "Click a ground position to fire 1 stored rocket.",
   "abilities.ronrockets.launch_rocket.tooltip3": "Launches along a long-range ballistic arc.",
+    "abilities.ronrockets.launch_rocket.tooltip4": "Cooldown: %s sec",
 
   "abilities.ronrockets.shield_intercept": "Shield Intercept",
   "abilities.ronrockets.shield_intercept.tooltip1": "Building integrity: %s%%",
   "abilities.ronrockets.shield_intercept.tooltip2": "Fully repaired — ready to intercept!",
   "abilities.ronrockets.shield_intercept.tooltip_damaged": "Must be fully repaired before activating!",
   "abilities.ronrockets.shield_intercept.tooltip3": "Intercept radius: %s blocks",
-  "abilities.ronrockets.shield_intercept.tooltip5": "Active for %s sec. Detonates rockets in range. Destroys 45%% of building on use.",
+  "abilities.ronrockets.shield_intercept.tooltip5": "Active for %s sec. Detonates rockets in range. Destroys 20%% of building on use.",
 "abilities.ronrockets.shield_intercept.tooltip6": "Iron cost: %s | Cooldown: %s sec",
 
   "abilities.ronrockets.produce_rocket": "Produce Rocket",
@@ -27,7 +28,7 @@
   "building.ronrockets.rocket_silo.already_owned": "You already have a Rocket Silo!",
   "building.ronrockets.shield_array": "Shield Array",
   "building.ronrockets.shield_array.tooltip_radius": "Intercept Radius: %s",
-  "building.ronrockets.shield_array.tooltip_fragile": "Fragile — intercept destroys 80%% of building",
+  "building.ronrockets.shield_array.tooltip_fragile": "Fragile — intercept destroys 20%% of building",
   "building.ronrockets.shield_array.tooltip_repair": "Must be fully repaired to activate",
 
   "production.ronrockets.rocket": "Rocket",

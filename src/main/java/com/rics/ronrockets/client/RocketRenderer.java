@@ -14,7 +14,6 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
 
     private final RocketModel model;
 
-    // Full-bright light value (15 sky + 15 block = 0xF0F0)
     private static final int FULL_BRIGHT = 0xF000F0;
 
     public RocketRenderer(EntityRendererProvider.Context context) {
@@ -27,22 +26,32 @@ public class RocketRenderer extends EntityRenderer<RocketEntity> {
                        PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
         poseStack.pushPose();
 
-        double vx = entity.getDeltaMovement().x;
-        double vz = entity.getDeltaMovement().z;
-        double vy = entity.getDeltaMovement().y;
+        // The model is built along the +Y axis (nose up).
+        // We need to rotate it so the nose points in the direction of travel.
+        var delta = entity.getDeltaMovement();
+        double dx = delta.x;
+        double dy = delta.y;
+        double dz = delta.z;
+        double horizontalDist = Math.sqrt(dx * dx + dz * dz);
 
-        float yaw = (float) Math.atan2(vz, vx);
-        float pitch = (float) Math.atan2(vy, Math.sqrt(vx * vx + vz * vz));
+        if (horizontalDist > 0.01 || Math.abs(dy) > 0.01) {
+            float yaw = (float) Math.atan2(dx, dz);
+            float pitch = (float) -Math.atan2(dy, horizontalDist);
 
-        poseStack.mulPose(Axis.YP.rotation(-yaw));
-        poseStack.mulPose(Axis.ZP.rotation(pitch));
+            // First rotate to face the horizontal travel direction
+            poseStack.mulPose(Axis.YP.rotation(yaw));
+            // Then tilt nose up/down based on vertical velocity
+            poseStack.mulPose(Axis.XP.rotation(pitch));
+        }
 
-        // Use full-bright so the rocket is always visible, even at night or in shadows
+        // The model points along +Y; at rest that means nose-up.
+        // With the yaw/pitch applied above, it now points along velocity.
+
         var vertex = buffer.getBuffer(
-                net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
+            net.minecraft.client.renderer.RenderType.entitySolid(getTextureLocation(entity)));
 
         model.renderToBuffer(poseStack, vertex, FULL_BRIGHT, OverlayTexture.NO_OVERLAY,
-                1f, 1f, 1f, 1f);
+            1f, 1f, 1f, 1f);
 
         poseStack.popPose();
 

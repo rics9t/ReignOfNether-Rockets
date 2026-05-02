@@ -6,14 +6,13 @@ import com.solegendary.reignofnether.unit.UnitAction;
 
 public class ProduceRocketAbility extends Ability {
 
-    public static final int DEFAULT_MAX_ROCKETS = 2;
-
-    // Single shared instance used as the key for BuildingPlacement charges
+    // Use maxCharges=0 so the Ability.setToMaxCooldown() never auto-decrements charges.
+    // We manage charges manually via RocketProd.onComplete and LaunchRocketAbility.use().
     public static final ProduceRocketAbility INSTANCE = new ProduceRocketAbility();
 
     private ProduceRocketAbility() {
         super(UnitAction.NONE, 0, 0, 0, false);
-        this.maxCharges = DEFAULT_MAX_ROCKETS;
+        this.maxCharges = 0;
     }
 
     /** Returns the configured rocket storage limit */

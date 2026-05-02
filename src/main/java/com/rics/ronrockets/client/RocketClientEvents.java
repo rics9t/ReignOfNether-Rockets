@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraftforge.api.distmarker.Dist;
@@ -32,6 +33,9 @@ public class RocketClientEvents {
     private static final List<RocketMarker> OUTGOING = new ArrayList<>();
     private static final int OUTGOING_DURATION = 20 * 10;
 
+    // HUD warning state
+    private static int hudWarningTicks = 0;
+
     /**
      * Called when the server broadcasts that a rocket has been launched.
      * Adds to INCOMING for non-attackers, and to OUTGOING for the attacker.
@@ -46,8 +50,24 @@ public class RocketClientEvents {
         if (isAttacker) {
             OUTGOING.add(new RocketMarker(targetPos, OUTGOING_DURATION));
         } else {
-            MC.level.playSound(player, player.blockPosition(), SoundEvents.BELL_RESONATE, SoundSource.HOSTILE, 1.0f, 0.6f);
+            // Play loud warning sound for incoming rockets
+            MC.level.playSound(player, player.blockPosition(),
+                SoundEvents.BELL_RESONATE, SoundSource.HOSTILE, 2.0f, 0.5f);
+            // Secondary alert sound
+            MC.level.playSound(player, player.blockPosition(),
+                SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.HOSTILE, 1.5f, 0.3f);
+
             INCOMING.add(new RocketMarker(targetPos, INCOMING_DURATION));
+
+            // Show HUD warning message
+            hudWarningTicks = 20 * 5; // 5 seconds
+            if (MC.gui != null) {
+                MC.gui.setOverlayMessage(
+                    Component.translatable("hud.ronrockets.rocket_incoming")
+                        .withStyle(s -> s.withBold(true).withColor(net.minecraft.ChatFormatting.RED)),
+                    false
+                );
+            }
         }
 
         // Pulsing target marker on the minimap for all players
@@ -59,11 +79,12 @@ public class RocketClientEvents {
         if (event.phase != TickEvent.Phase.END) return;
         if (MC.level == null) return;
 
-        // Tick incoming warnings
+        // Tick incoming warnings — smoke signal particles above target
         Iterator<RocketMarker> it = INCOMING.iterator();
         while (it.hasNext()) {
             RocketMarker w = it.next();
             w.ticksRemaining--;
+            // Pulsing smoke signal above target
             if (w.ticksRemaining % 4 == 0) {
                 MC.level.addParticle(
                     ParticleTypes.CAMPFIRE_SIGNAL_SMOKE,
@@ -71,6 +92,16 @@ public class RocketClientEvents {
                     w.target.getY() + 6,
                     w.target.getZ() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 2,
                     0, -0.1, 0
+                );
+            }
+            // Red flame particles — urgent visual
+            if (w.ticksRemaining % 6 == 0) {
+                MC.level.addParticle(
+                    ParticleTypes.FLAME,
+                    w.target.getX() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 1.5,
+                    w.target.getY() + 5,
+                    w.target.getZ() + 0.5 + (MC.level.random.nextDouble() - 0.5) * 1.5,
+                    0, 0.08, 0
                 );
             }
             if (w.ticksRemaining <= 0) it.remove();
@@ -82,6 +113,11 @@ public class RocketClientEvents {
             RocketMarker m = it2.next();
             m.ticksRemaining--;
             if (m.ticksRemaining <= 0) it2.remove();
+        }
+
+        // Refresh HUD warning while active
+        if (hudWarningTicks > 0) {
+            hudWarningTicks--;
         }
     }
 

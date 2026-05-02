@@ -163,8 +163,7 @@ mixin {
 jar {
     manifest {
         attributes([
-            // Declared below due to Essential Partner Mod
-            // "MixinConfigs": "reignofnether.mixins.json",
+            "MixinConfigs": "ronrockets.mixins.json",
             "Specification-Title": "reignofnether",
             "Specification-Vendor": "examplemodsareus",
             "Specification-Version": "1", // We are version 1 of ourselves
