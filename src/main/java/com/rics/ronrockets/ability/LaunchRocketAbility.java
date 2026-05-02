@@ -24,9 +24,7 @@ import static com.solegendary.reignofnether.util.MiscUtil.fcs;
 
 public class LaunchRocketAbility extends Ability {
 
-    // 30-second cooldown between launches (comparable to CallLightning at 60s,
-    // but rocket must be produced first so 30s is fair)
-    private static final int COOLDOWN_TICKS = 600;
+    private static final int COOLDOWN_TICKS = 100;
 
     public LaunchRocketAbility() {
         super(UnitAction.ATTACK_GROUND, COOLDOWN_TICKS, 9999, 0, false);

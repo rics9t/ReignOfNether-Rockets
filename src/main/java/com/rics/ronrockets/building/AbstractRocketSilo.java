@@ -7,6 +7,7 @@ import com.rics.ronrockets.rocket.RocketProduction;
 import com.solegendary.reignofnether.building.BuildingClientEvents;
 import com.solegendary.reignofnether.building.BuildingPlacement;
 import com.solegendary.reignofnether.building.BuildingServerEvents;
+import com.solegendary.reignofnether.sandbox.SandboxClientEvents;
 import com.solegendary.reignofnether.sandbox.SandboxServer;
 import com.solegendary.reignofnether.building.buildings.placements.ProductionPlacement;
 import com.solegendary.reignofnether.building.production.ProductionBuilding;
@@ -93,7 +94,8 @@ public abstract class AbstractRocketSilo extends ProductionBuilding {
     protected static boolean clientCanPlaceSilo() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return true;
-        if (SandboxServer.isSandboxPlayer(mc.player.getName().getString())) return true;
+        // Use client-side sandbox check (works for non-host players in multiplayer)
+        if (SandboxClientEvents.isSandboxPlayer(mc.player.getName().getString())) return true;
         int limit = RonRocketsConfig.getSiloLimit();
         int current = countSiloOwned(mc.player.getName().getString(), true);
         return current < limit;

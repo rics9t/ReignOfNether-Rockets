@@ -33,15 +33,16 @@ public class ShieldInterceptAbility extends Ability {
 
     private static final Logger LOG = LogManager.getLogger("RonRockets/Shield");
 
-    // 60-second cooldown (comparable to powerful abilities like CallLightning)
-    private static final int COOLDOWN_TICKS = 300;
-
     public ShieldInterceptAbility() {
-        super(UnitAction.NONE, COOLDOWN_TICKS, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);
+        super(UnitAction.NONE, RonRocketsConfig.getShieldCooldownSec() * 20, ShieldArrayBuilding.SHIELD_RADIUS, 0, false);
     }
 
     @Override
     public AbilityButton getButton(Keybinding hotkey, BuildingPlacement placement) {
+        // Keep cooldownMax in sync with config
+        int cooldownSec = RonRocketsConfig.getShieldCooldownSec();
+        this.cooldownMax = cooldownSec * 20;
+
         String title = I18n.get("abilities.ronrockets.shield_intercept");
         return new AbilityButton(title,
             ResourceLocation.fromNamespaceAndPath(RonRocketsMod.MODID, "textures/icons/shield_intercept.png"),
@@ -60,7 +61,7 @@ public class ShieldInterceptAbility extends Ability {
                 fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip3", ShieldArrayBuilding.SHIELD_RADIUS)),
                 fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip5", getActiveDurationTicks() / 20)),
                 fcs(I18n.get("abilities.ronrockets.shield_intercept.tooltip6",
-                    (int) RonRocketsConfig.getShieldIronCost(), COOLDOWN_TICKS / 20))
+                    (int) RonRocketsConfig.getShieldIronCost(), cooldownSec))
             ),
             this,
             placement
@@ -101,22 +102,12 @@ public class ShieldInterceptAbility extends Ability {
             LOG.info("Shield activated — paid {} iron", ironCost);
         }
 
-        // Apply damage to the shield building on activation
-        float damageFraction = RonRocketsConfig.getShieldDamageFraction();
-        int blocksToDestroy = (int) (buildingUsing.getBlocksTotal() * damageFraction);
-        LOG.info("Shield ACTIVATED — destroying {} blocks ({}%)", blocksToDestroy, (int)(damageFraction * 100));
-        if (blocksToDestroy > 0) {
-            buildingUsing.destroyRandomBlocks(blocksToDestroy);
-            if (buildingUsing.shouldBeDestroyed()) {
-                LOG.warn("Shield destroyed after activation");
-                com.solegendary.reignofnether.building.BuildingServerEvents.cancelBuilding(buildingUsing, buildingUsing.ownerName);
-                return;
-            }
-        }
-
+        // Damage is deferred — applied by ShieldVisualTickHandler after the active window ends
+        this.cooldownMax = RonRocketsConfig.getShieldCooldownSec() * 20;
         this.setToMaxCooldown(buildingUsing);
         buildingUsing.updateButtons();
         spawnActivationParticles(level, buildingUsing.centrePos);
+        LOG.info("Shield ACTIVATED — damage deferred until active window ends");
     }
 
     public static ShieldInterceptAbility getFrom(BuildingPlacement placement) {
@@ -129,7 +120,10 @@ public class ShieldInterceptAbility extends Ability {
     public boolean isShieldActive(BuildingPlacement placement) {
         int cooldown = (int) getCooldown(placement);
         int activeDuration = getActiveDurationTicks();
-        return cooldown > 0 && cooldown <= activeDuration;
+        int max = (int) this.cooldownMax;
+        // Cooldown starts at cooldownMax and ticks DOWN.
+        // Shield is active during the first `activeDuration` ticks after activation.
+        return cooldown > (max - activeDuration) && cooldown <= max;
     }
 
     public int getActiveDurationTicks() {
